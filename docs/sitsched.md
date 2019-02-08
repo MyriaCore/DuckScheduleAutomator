@@ -41,7 +41,7 @@ To get information on the courses, [SITScheduler](http://sitscheduler.com/) uses
 a get request to URL `https://stevens-scheduler.cfapps.io/p/{SEM}`, where `{SEM}`
 is the semester code, like `2019F`, or `2018S`.
 
-Note: It has not yet been confirmed how SITScheduler retrieves coreq / prereq info. 
+Note: It has not yet been confirmed how SITScheduler retrieves coreq / prereq info.
 It may have to do with the stevens.edu cookie it sets, maybe it just grabs it from previous
 mystevens logins.
 
@@ -52,29 +52,28 @@ Request Response:
 ```
 [
   {
-    callNumber: "10598"
+    callNumber: "10600"
     coreqs: ""
-    credits: 1
-    currentEnrollment: "11"
+    credits: 2
+    currentEnrollment: "24"
     daysTimeLocation:
-      [{
-        building: "BC"
-        day: "F"
-        endTime: "10:50:00Z"
-        room: "320"
-        site: "Castle Point"
-        startTime: "9:00:00Z"
-        instructor: "Nastasi J"
-        maxEnrollment: "20"
-        prereqs: ""
-        section: "E 120A"
-        status: "O"
-        title: "Engineering Graphics"
-      }, {...}, ...]
-  }
-],
-[...],
-[...],
-...
+    {
+      building: "E"
+      day: "R"
+      endTime: "11:50:00Z"
+      room: "011"
+      site: "Castle Point"
+      startTime: "9:00:00Z"
+    }
+    instructor: "Calhoun S"
+    maxEnrollment: "24"
+    prereqs: "Prerequisite: E   121"
+    section: "E 122A"
+    status: "C"
+    title: "Engineering Design II"
+  },
+  {...},
+  {...},
+  ...]
 ```
 <!-- TODO: format all of this better for later -->
