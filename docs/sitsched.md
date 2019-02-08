@@ -41,6 +41,10 @@ To get information on the courses, [SITScheduler](http://sitscheduler.com/) uses
 a get request to URL `https://stevens-scheduler.cfapps.io/p/{SEM}`, where `{SEM}`
 is the semester code, like `2019F`, or `2018S`.
 
+Note: It has not yet been confirmed how SITScheduler retrieves coreq / prereq info. 
+It may have to do with the stevens.edu cookie it sets, maybe it just grabs it from previous
+mystevens logins.
+
 ### Example Response
 Request cURL: `curl 'https://stevens-scheduler.cfapps.io/p/2019S' -H 'Accept: application/json, text/plain, */*' -H 'Referer: http://sitscheduler.com/' -H 'Origin: http://sitscheduler.com' -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.81 Safari/537.36' -H 'DNT: 1' --compressed`
 
