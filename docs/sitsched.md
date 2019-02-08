@@ -28,7 +28,10 @@ its most get request endpoints located at [[https://stevens-scheduler.cfapps.io/
 To get a list of valid term codes, do a GET request with request URL `https://stevens-scheduler.cfapps.io/p/terms`. It will give you a list of strings, all of which are valid term codes.
 
 ### Example Response
-Request cURL: `curl 'https://stevens-scheduler.cfapps.io/p/terms' -H 'Accept: application/json, text/plain, */*' -H 'Referer: http://sitscheduler.com/' -H 'Origin: http://sitscheduler.com' -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.81 Safari/537.36' -H 'DNT: 1' --compressed`
+Request cURL:
+```
+curl 'https://stevens-scheduler.cfapps.io/p/terms' -H 'Accept: application/json, text/plain, */*' -H 'Referer: http://sitscheduler.com/' -H 'Origin: http://sitscheduler.com' -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.81 Safari/537.36' -H 'DNT: 1' --compressed`
+```
 
 Request Response:
 ```
@@ -46,7 +49,11 @@ It may have to do with the stevens.edu cookie it sets, maybe it just grabs it fr
 mystevens logins.
 
 ### Example Response
-Request cURL: `curl 'https://stevens-scheduler.cfapps.io/p/2019S' -H 'Accept: application/json, text/plain, */*' -H 'Referer: http://sitscheduler.com/' -H 'Origin: http://sitscheduler.com' -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.81 Safari/537.36' -H 'DNT: 1' --compressed`
+Request cURL:
+
+```
+curl 'https://stevens-scheduler.cfapps.io/p/2019S' -H 'Accept: application/json, text/plain, */*' -H 'Referer: http://sitscheduler.com/' -H 'Origin: http://sitscheduler.com' -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.81 Safari/537.36' -H 'DNT: 1' --compressed
+```
 
 Request Response:
 ```
