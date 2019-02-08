@@ -35,7 +35,6 @@ Request Response:
 ["2019S","2018F","2018B","2018A","2018S","2017F","2017B","2017A", (...),"2006W","2005F","2005B","2005A","2005S","2005W","2004F"]
 ```
 
-
 ## Per-Term Section Info
 
 To get information on the courses, [SITScheduler](http://sitscheduler.com/) uses
@@ -74,4 +73,4 @@ Request Response:
 [...],
 ...
 ```
-[](TODO: format this shit better)
+<!-- TODO: format all of this better for later -->
