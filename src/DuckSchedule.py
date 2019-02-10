@@ -41,7 +41,7 @@ class DuckSchedule(object):
         """
         return self.__enrolled_sections__
 
-    def __resolve_sechedule__(self):
+    def __resolve_schedule__(self):
         """
         Private Helper function responsible for finding all the sections given the
         classes in `enrolled_classes`, while also avoiding the times in `no_class_hours`.
