@@ -34,12 +34,20 @@ def __clean__(section):
     """
     Takes a list of dictionaries as input and returns a cleaned up version where the values aren't all strings
     """
-    weekday = {
+    weekdays = {
         "M": 0,
         "T": 1,
         "W": 2,
         "R": 3,
         "F": 4,
+    }
+
+    buildings = {
+        "E": "Edwin A. Stevens Hall Hoboken, NJ 07030",
+        "B": "Burchard Bldg Hoboken, NJ 07030",
+        "BC": "Babbio Center, River Street, Hoboken, NJ 07030",
+        "NB": "" # TODO
+        "X": "" #TODO
     }
 
     clean_section = deepcopy(section)
