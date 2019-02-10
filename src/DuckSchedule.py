@@ -89,6 +89,8 @@ class DuckClass(object):
 
 class DuckSection(DuckClass):
 
+    # TODO: add a constructor that recieves the raw json object.
+
     def __init__(self, course_code, title, subject, prereqs, coreqs, term, days_time_location, instructor, call_number, section_id):
         """
         Constructor for a `DuckSection` object, representing a section for a specific `DuckClass`.
@@ -174,6 +176,9 @@ class DuckTerm(object):
         `DuckSection`'s.
         """
         if self.__name__:
-            term_sections(self.__name__)
+            raw_sections = term_sections(self.__name__)
+            return map((lambda x: DuckSection(x)), raw_sections)
+        else:
+            raise Exception("Didn't have name information required for function!")
 
     # TODO: functions to query the term, like get_sections_by_name, or get_sections_by_subject, etc.
