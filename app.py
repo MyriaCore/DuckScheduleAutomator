@@ -2,6 +2,7 @@ from flask import Flask
 
 app = Flask(__name__)
 
+# TODO: make look nice and do thing
 
 @app.route('/')
 def hello_world():

@@ -29,4 +29,4 @@ def term_sections(term):
         raise Exception(term + ' is not a valid term code!')
 
 
-# TODO: function to read in all data as Duck objects.
+# TODO: function to read in all data as `DuckSchedule` objects.
