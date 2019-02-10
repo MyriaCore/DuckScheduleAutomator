@@ -30,7 +30,9 @@ def term_sections(term):
 
 
 def __clean__(section):
-    """"""
+    """
+    Takes a list of dictionaries as input and returns a cleaned up version where the values aren't all strings
+    """
     pass # TODO: implement
 
 
