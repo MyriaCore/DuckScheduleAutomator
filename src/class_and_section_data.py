@@ -22,11 +22,16 @@ def term_sections(term):
         rsections = requests.get('https://stevens-scheduler.cfapps.io/p/' + term)
         if rsections.status_code == 200:
             # TODO: filter through this to make sure data types are as they should be (numbers are numbers, dates are dates, etc.)
-            return list(rsections.json())
+            return __clean__(list(rsections.json()))
         else:
             raise Exception('Request returned invalid status code ' + rsections.status_code + '.')
     else:
         raise Exception(term + ' is not a valid term code!')
+
+
+def __clean__(section):
+    """"""
+
 
 
 # TODO: function to read in all data as `DuckSchedule` objects.
