@@ -1,4 +1,5 @@
 import requests
+from copy import deepcopy
 
 def terms():
     """
@@ -22,7 +23,7 @@ def term_sections(term):
         rsections = requests.get('https://stevens-scheduler.cfapps.io/p/' + term)
         if rsections.status_code == 200:
             # TODO: filter through this to make sure data types are as they should be (numbers are numbers, dates are dates, etc.)
-            return __clean__(list(rsections.json()))
+            return map(__clean__, list(rsections.json()))
         else:
             raise Exception('Request returned invalid status code ' + rsections.status_code + '.')
     else:
@@ -33,7 +34,22 @@ def __clean__(section):
     """
     Takes a list of dictionaries as input and returns a cleaned up version where the values aren't all strings
     """
-    pass # TODO: implement
+    weekday = {
+        "M": 0,
+        "T": 1,
+        "W": 2,
+        "R": 3,
+        "F": 4,
+    }
+
+    clean_section = deepcopy(section)
+    clean_section["maxEnrollment"] = int(section["maxEnrollment"])
+    clean_section["currentEnrollment"] = int(section["currentEnrollment"])
+    clean_section["daysTimeLocation"] = deepcopy(section["daysTimeLocation"])
+
+    clean_section["daysTimeLocation"]["day"] = weekday[section["daysTimeLocation"]["day"]]
+
+    return clean_section
 
 
 
