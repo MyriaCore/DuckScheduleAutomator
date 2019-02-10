@@ -53,7 +53,7 @@ def __clean__(section):
         "X": "McLean Hall, Hoboken, NJ 07030"
     }
 
-    clean_section = deepcopy(section)
+    clean_section = deepcopy(section) # TODO: find a way to selectively copy key val pairs that can stay as strings
     clean_section["maxEnrollment"] = int(section["maxEnrollment"])
     clean_section["currentEnrollment"] = int(section["currentEnrollment"])
     # TODO: Find a way to add a "roomloc" key that just has like "NB 102" as a val
