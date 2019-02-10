@@ -81,6 +81,19 @@ class DuckClass(object):
 class DuckSection(DuckClass):
 
     def __init__(self, course_code, title, subject, prereqs, coreqs, term, days_time_location, instructor, call_number, section_id):
+        """
+        Constructor for a `DuckSection` object, representing a section for a specific `DuckClass`.
+        `course_code`
+        `title`
+        `subject`
+        `prereqs`
+        `coreqs`
+        `term`
+        `days_time_location`
+        `instructor`
+        `call_number`
+        `section_id`
+        """
         super().__init__(course_code, title, subject)
         self.__prereqs__ = prereqs
         self.__coreqs__ = coreqs
@@ -118,4 +131,27 @@ class DuckSection(DuckClass):
     def section_id(self):
         return self.__section_id__
 
-print(s.section_id)
+class DuckTerm(object):
+    def __init__(self, name):
+        """
+        Constructor for a `DuckTerm` object, representing a specific term,
+        and all of the sections in it.
+        `name` is the term code (2019S for example).
+        """
+        self.__name__ = name
+        self.__sections__ = self.__get_sections__()
+
+    def name(self):
+        return self.__name__
+
+    def sections(self):
+        return self.__sections__
+
+    def __get_sections__(self):
+        """
+        Helper function to get the sections for the term as a list of
+        `DuckSection`'s.
+        """
+        pass # TODO: implement
+
+    # TODO: functions to query the term, like get_sections_by_name, or get_sections_by_subject, etc.
