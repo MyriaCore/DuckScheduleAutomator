@@ -1,5 +1,6 @@
 import requests
 from copy import deepcopy
+from date_util import convert_time
 
 def terms():
     """
@@ -22,7 +23,6 @@ def term_sections(term):
     if term in terms():
         rsections = requests.get('https://stevens-scheduler.cfapps.io/p/' + term)
         if rsections.status_code == 200:
-            # TODO: filter through this to make sure data types are as they should be (numbers are numbers, dates are dates, etc.)
             return map(__clean__, list(rsections.json()))
         else:
             raise Exception('Request returned invalid status code ' + rsections.status_code + '.')
@@ -34,25 +34,6 @@ def __clean__(section):
     """
     Takes a list of dictionaries as input and returns a cleaned up version where the values aren't all strings
     """
-    weekdays = {
-        "M": 0,
-        "T": 1,
-        "W": 2,
-        "R": 3,
-        "F": 4,
-    }
-
-    buildings = {
-        "E": "Edwin A. Stevens Hall Hoboken, NJ 07030",
-        "B": "Burchard Bldg Hoboken, NJ 07030",
-        "BC": "Babbio Center, River Street, Hoboken, NJ 07030",
-        "NB": "North Building, Castle Point Terrace, Hoboken, NJ 07030",
-        "K": "607 River St, Hoboken, NJ 07030",
-        "M": "607 River St, Hoboken, NJ 07030",
-        "P": "607 River St, Hoboken, NJ 07030",
-        "X": "McLean Hall, Hoboken, NJ 07030"
-    }
-
     # To keep track of keys that have to be handled and not copied over
     unsafe_keys = ["maxEnrollment", "currentEnrollment", "daysTimeLocation"]
 
@@ -64,23 +45,50 @@ def __clean__(section):
             clean_section["currentEnrollment"] = int(section["currentEnrollment"])
 
             if type(section["daysTimeLocation"]) is dict:
-                clean_section["daysTimeLocation"]["day"] = weekdays[section["daysTimeLocation"]["day"]]
+                clean_section["daysTimeLocation"] = __clean_days_time_location__(section["daysTimeLocation"])
             elif type(section["daysTimeLocation"]) is list:
-                pass # TODO: implement
+                clean_section["daysTimeLocation"] = map(__clean_days_time_location__, section["daysTimeLocation"])
             else:
                 pass #TODO: implement
 
-
-
-
-    # clean_section = deepcopy(section) # TODO: find a way to selectively copy key val pairs that can stay as strings
-
-    # TODO: Find a way to add a "roomloc" key that just has like "NB 102" as a val
-    # TODO: make sure we handle this if it's a list of daytimelocations
-
-
     return clean_section
 
+def __clean_days_time_location__(days_time_location):
+    """Helper function for __clean__, handles daysTimeLocation key."""
 
+    # Weekdays are the same enumerations that date.weekday() uses
+    # date.weekday() docs: https://docs.python.org/3/library/datetime.html#datetime.date.weekday
+    # Used for the `day` key.
+    weekdays = {
+        "M": 0,
+        "T": 1,
+        "W": 2,
+        "R": 3,
+        "F": 4,
+    }
 
-# TODO: function to read in all data as `DuckSchedule` objects.
+    # Converts building codes into addresses for the `building` key.
+    buildings = {
+        "E": "Edwin A. Stevens Hall Hoboken, NJ 07030",
+        "B": "Burchard Bldg Hoboken, NJ 07030",
+        "BC": "Babbio Center, River Street, Hoboken, NJ 07030",
+        "NB": "North Building, Castle Point Terrace, Hoboken, NJ 07030",
+        "K": "607 River St, Hoboken, NJ 07030",
+        "M": "607 River St, Hoboken, NJ 07030",
+        "P": "607 River St, Hoboken, NJ 07030",
+        "X": "McLean Hall, Hoboken, NJ 07030"
+    }
+
+    clean_dtl["day"] = weekdays[days_time_location["day"]]
+    clean_dtl["startDate"] = None # TODO: implement
+    clean_dtl["endDate"] = None # TODO: implement
+
+    clean_dtl["startTime"] = convert_time(days_time_location["startTime"])
+    clean_dtl["endTime"] = convert_time(days_time_location["endTime"])
+
+    # `room` key is handled before `building` b/c `room` relies on the building
+    # code, which would be written over if `building` was handled first.
+    clean_dtl["room"] = str(days_time_location["building"] + " " + days_time_location["room"])
+    clean_dtl["building"] = buildings[days_time_location["building"]]
+
+    return clean_dtl
