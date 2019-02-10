@@ -1,3 +1,5 @@
+from class_and_section_data import terms, term_sections
+
 class DuckSchedule(object):
     def __init__(self, name, enrolled_classes, term, no_class_hours):
         """
@@ -11,7 +13,7 @@ class DuckSchedule(object):
         self.__enrolled_classes__ = enrolled_classes
         self.__no_class_hours__ = no_class_hours # TODO: rename
         self.__term__ = term
-        self.__enrolled_sections__ = self.__resolve_schedule__()
+        self.__enrolled_sections__ = self.__resolve_sechedule__()
 
     @property
     def name(self):
@@ -171,6 +173,7 @@ class DuckTerm(object):
         Helper function to get the sections for the term as a list of
         `DuckSection`'s.
         """
-        pass # TODO: implement
+        if self.__name__:
+            term_sections(self.__name__)
 
     # TODO: functions to query the term, like get_sections_by_name, or get_sections_by_subject, etc.
