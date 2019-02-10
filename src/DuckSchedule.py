@@ -1,5 +1,5 @@
 class DuckSchedule(object):
-    def __init__(self, name, enrolled_classes, no_class_hours):
+    def __init__(self, name, enrolled_classes, term, no_class_hours):
         """
         Constructor for a `DuckSchedule` object, representing the current ideal schedule.
         `name` is a string representing the "name" of the scheduler
@@ -10,6 +10,7 @@ class DuckSchedule(object):
         self.__name__ = name
         self.__enrolled_classes__ = enrolled_classes
         self.__no_class_hours__ = no_class_hours # TODO: rename
+        self.__term__ = term
         self.__enrolled_sections__ = self.__resolve_sechedule__()
 
     @property
@@ -26,20 +27,26 @@ class DuckSchedule(object):
         return self.__enrolled_classes__
 
     @property
-    def no_class_hours(self):
-        """
-        A (???) representing the times classes shouldn't be scheduled during
-        (like early in the morning, late at night, or during lunch for example)
-        """
-        return self.__no_class_hours__
-
-    @property
     def enrolled_sections(self):
         """
         A list of `DuckSections` representing the sections to enroll in to create
         the most ideal schedule.
         """
         return self.__enrolled_sections__
+
+    @property
+    def term(self):
+        """"""
+        # TODO: documentation
+        return self.__term__
+
+    @property
+    def no_class_hours(self):
+        """
+        A (???) representing the times classes shouldn't be scheduled during
+        (like early in the morning, late at night, or during lunch for example)
+        """
+        return self.__no_class_hours__
 
     def __resolve_schedule__(self):
         """
