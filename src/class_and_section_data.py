@@ -27,3 +27,6 @@ def term_sections(term):
             raise Exception('Request returned invalid status code ' + rsections.status_code + '.')
     else:
         raise Exception(term + ' is not a valid term code!')
+
+
+# TODO: function to read in all data as Duck objects.

@@ -55,6 +55,38 @@ class DuckSection(DuckClass):
         return self.__section_id__
 
 
+class DuckSchedule(object):
+    def __init__(self, name, enrolled_classes, no_class_hours):
+        self.__name__ = name
+        self.__enrolled_classes__ = enrolled_classes
+        self.__no_class_hours__ = no_class_hours # TODO: rename
+        self.__enrolled_sections__ = self.__resolve_sechedule__()
+
+    @property
+    def name(self):
+        return self.__name__
+
+    @property
+    def enrolled_classes(self):
+        return self.__enrolled_classes__
+
+    @property
+    def no_class_hours(self):
+        return self.__no_class_hours__
+
+    @property
+    def enrolled_sections(self):
+        return self.__enrolled_sections__
+
+    def __resolve_sechedule__(self):
+        """
+        Private Helper function responsible for finding all the sections given the
+        classes in `enrolled_classes`, while also avoiding the times in `no_class_hours`.
+        Returns a list of `DuckSection` objects representing the best possible "class loadout"
+        """
+        pass # TODO: implement
+
+
 d = DuckClass("PEP111", "Mechanics", "Physics")
 s = DuckSection("PEP111", "Mechanics", "Physics", "PEP000", "PEP110", "5-8PM", "Ting Lu", "10000", "D")
 
