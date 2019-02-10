@@ -31,6 +31,7 @@ def term_sections(term):
 
 def __clean__(section):
     """"""
+    pass # TODO: implement
 
 
 
