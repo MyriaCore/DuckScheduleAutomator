@@ -83,16 +83,16 @@ class DuckSection(DuckClass):
     def __init__(self, course_code, title, subject, prereqs, coreqs, term, days_time_location, instructor, call_number, section_id):
         """
         Constructor for a `DuckSection` object, representing a section for a specific `DuckClass`.
-        `course_code`
-        `title`
-        `subject`
-        `prereqs`
-        `coreqs`
-        `term`
-        `days_time_location`
-        `instructor`
-        `call_number`
-        `section_id`
+        `course_code` is the shortened name of the course (PEP111 for example)
+        `title` is the human readable name of the curse (Mechanics for example)
+        `subject` is the subject of the course (Environmental Sciences for example)
+        `prereqs` is a list of `DuckSections` representing the pre-requisites of this section.
+        `coreqs` is a list of `DuckSections` representing the co-requisites of this section.
+        `term` is a `DuckTerm` object representing the term this section belongs to.
+        `days_time_location` is a (???)
+        `instructor` Is a string representing the name of the instructor teaching this section.
+        `call_number` Is an integer representing the course call number used to sign up.
+        `section_id` Is the section ID for the course (the 'A' in PEP111A, or the RC in PEP111RC)
         """
         super().__init__(course_code, title, subject)
         self.__prereqs__ = prereqs
@@ -105,14 +105,17 @@ class DuckSection(DuckClass):
 
     @property
     def prereqs(self):
+        """A list of `DuckSections` representing the pre-requisites of this section."""
         return self.__prereqs__
 
     @property
     def coreqs(self):
+        """A list of `DuckSections` representing the co-requisites of this section."""
         return self.__coreqs__
 
     @property
     def term(self):
+        """A `DuckTerm` object representing the term this section belongs to."""
         return self.__term__
 
     @property
@@ -121,14 +124,19 @@ class DuckSection(DuckClass):
 
     @property
     def instructor(self):
+        """A string representing the name of the instructor teaching this section."""
         return self.__instructor__
 
     @property
     def call_number(self):
+        """an integer representing the course call number used to sign up."""
+        # TODO: consider having this be a string.
         return self.__call_number__
 
     @property
     def section_id(self):
+        """A string representing the section ID for the course
+        (the 'A' in PEP111A, or the RC in PEP111RC)"""
         return self.__section_id__
 
 class DuckTerm(object):
@@ -142,9 +150,13 @@ class DuckTerm(object):
         self.__sections__ = self.__get_sections__()
 
     def name(self):
+        """A string representing the term code (2019S for example)."""
         return self.__name__
 
     def sections(self):
+        """
+        A list of `DuckSections` representing all of the sections offered in the term.
+        """
         return self.__sections__
 
     def __get_sections__(self):
