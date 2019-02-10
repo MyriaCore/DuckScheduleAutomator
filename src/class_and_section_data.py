@@ -46,8 +46,11 @@ def __clean__(section):
         "E": "Edwin A. Stevens Hall Hoboken, NJ 07030",
         "B": "Burchard Bldg Hoboken, NJ 07030",
         "BC": "Babbio Center, River Street, Hoboken, NJ 07030",
-        "NB": "" # TODO
-        "X": "" #TODO
+        "NB": "North Building, Castle Point Terrace, Hoboken, NJ 07030",
+        "K": "607 River St, Hoboken, NJ 07030",
+        "M": "607 River St, Hoboken, NJ 07030",
+        "P": "607 River St, Hoboken, NJ 07030",
+        "X": "McLean Hall, Hoboken, NJ 07030"
     }
 
     clean_section = deepcopy(section)
@@ -55,7 +58,7 @@ def __clean__(section):
     clean_section["currentEnrollment"] = int(section["currentEnrollment"])
     clean_section["daysTimeLocation"] = deepcopy(section["daysTimeLocation"])
 
-    clean_section["daysTimeLocation"]["day"] = weekday[section["daysTimeLocation"]["day"]]
+    clean_section["daysTimeLocation"]["day"] = weekdays[section["daysTimeLocation"]["day"]]
 
     return clean_section
 
