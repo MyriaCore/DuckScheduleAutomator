@@ -11,7 +11,7 @@ class DuckSchedule(object):
         self.__enrolled_classes__ = enrolled_classes
         self.__no_class_hours__ = no_class_hours # TODO: rename
         self.__term__ = term
-        self.__enrolled_sections__ = self.__resolve_sechedule__()
+        self.__enrolled_sections__ = self.__resolve_schedule__()
 
     @property
     def name(self):
