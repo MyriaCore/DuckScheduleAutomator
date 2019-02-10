@@ -114,13 +114,13 @@ class DuckSection(DuckClass):
         self.__call_number__ = call_number
         self.__section_id__ = section_id
 
-    def __init__(section_map):
+    def __init__(self, section_map):
         """
         Constructor overload for a `DuckSection` object, representing a section for a specific `DuckClass`.
         `section_map` The json-like dictionary representing a class section.
             The kind that comes from `term_sections`.
         """
-        pass # TODO: implement
+        pass # TODO: implement - Zac
 
     @property
     def prereqs(self):
