@@ -56,7 +56,8 @@ def __clean__(section):
     clean_section = deepcopy(section)
     clean_section["maxEnrollment"] = int(section["maxEnrollment"])
     clean_section["currentEnrollment"] = int(section["currentEnrollment"])
-    clean_section["daysTimeLocation"] = deepcopy(section["daysTimeLocation"])
+    # TODO: Find a way to add a "roomloc" key that just has like "NB 102" as a val
+    # TODO: make sure we handle this if it's a list of daytimelocations
 
     clean_section["daysTimeLocation"]["day"] = weekdays[section["daysTimeLocation"]["day"]]
 
