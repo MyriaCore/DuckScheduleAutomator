@@ -36,7 +36,8 @@ def __clean__(section):
     """
     # To keep track of keys that have to be handled and not copied over
 
-    unsafe_keys = ["maxEnrollment", "currentEnrollment", "daysTimeLocation"]
+    unsafe_keys = ["maxEnrollment", "currentEnrollment", "daysTimeLocation", "prereqs", "coreqs"]
+
 
     clean_section = {}
 
@@ -49,51 +50,68 @@ def __clean__(section):
 
             if type(section["daysTimeLocation"]) is dict:
                 clean_section["daysTimeLocation"] = __clean_days_time_location__(section["daysTimeLocation"])
+                clean_section["instructors"] = [clean_section["daysTimeLocation"]["instructor"]]
             elif type(section["daysTimeLocation"]) is list:
-                clean_section["daysTimeLocation"] = map(__clean_days_time_location__, section["daysTimeLocation"])
+                clean_section["daysTimeLocation"] = list(map(__clean_days_time_location__, section["daysTimeLocation"]))
+                clean_section["instructors"] = set([dtl["instructor"] for dtl in clean_section["daysTimeLocation"]]) # TODO: ensure the optionality here works
             else:
-                pass #TODO: implement
+                raise Exception("daysTimeLocation should either be a dictionary or a list!")
+
+            # For notes on prereqs and coreqs, visit the docs section of `sitsched.md`
+            clean_section["prereqs"] = None # TODO
+            clean_section["coreqs"] = None # TODO
 
     return clean_section
 
 def __clean_days_time_location__(days_time_location):
     """Helper function for __clean__, handles daysTimeLocation key."""
 
-    # Weekdays are the same enumerations that date.weekday() uses
-    # date.weekday() docs: https://docs.python.org/3/library/datetime.html#datetime.date.weekday
-    # Used for the `day` key.
-    weekdays = {
-        "M": 0,
-        "T": 1,
-        "W": 2,
-        "R": 3,
-        "F": 4,
-    }
-
-    # Converts building codes into addresses for the `building` key.
-    buildings = {
-        "E": "Edwin A. Stevens Hall Hoboken, NJ 07030",
-        "B": "Burchard Bldg Hoboken, NJ 07030",
-        "BC": "Babbio Center, River Street, Hoboken, NJ 07030",
-        "NB": "North Building, Castle Point Terrace, Hoboken, NJ 07030",
-        "K": "607 River St, Hoboken, NJ 07030",
-        "M": "607 River St, Hoboken, NJ 07030",
-        "P": "607 River St, Hoboken, NJ 07030",
-        "X": "McLean Hall, Hoboken, NJ 07030"
-    }
-
+    unsafe_keys = ["day", "room", "building"]
     clean_dtl = {}
 
-    clean_dtl["day"] = weekdays[days_time_location["day"]]
-    clean_dtl["startDate"] = None # TODO: implement
-    clean_dtl["endDate"] = None # TODO: implement
+    for key in list(days_time_location.keys()):
+        if key not in unsafe_keys:
+            clean_dtl[key] = deepcopy(days_time_location[key])
+        else:
+            # Used for the `day` key.
+            weekdays = {
+                "M": "Mon",
+                "T": "Tues",
+                "W": "Wed",
+                "R": "Thurs",
+                "F": "Fri",
+                "TBA": "TBA"
+            }
 
-    clean_dtl["startTime"] = convert_time(days_time_location["startTime"])
-    clean_dtl["endTime"] = convert_time(days_time_location["endTime"])
+            # Converts building codes into addresses for the `building` key.
+            buildings = {
+                "E": "Edwin A. Stevens Hall Hoboken, NJ 07030",
+                "B": "Burchard Bldg Hoboken, NJ 07030",
+                "BC": "Babbio Center, River Street, Hoboken, NJ 07030",
+                "NB": "North Building, Castle Point Terrace, Hoboken, NJ 07030",
+                "K": "607 River St, Hoboken, NJ 07030",
+                "M": "607 River St, Hoboken, NJ 07030",
+                "P": "607 River St, Hoboken, NJ 07030",
+                "X": "McLean Hall, Hoboken, NJ 07030",
+                "TBA": "TBA"
+            }
 
-    # `room` key is handled before `building` b/c `room` relies on the building
-    # code, which would be written over if `building` was handled first.
-    clean_dtl["room"] = str(days_time_location["building"] + " " + days_time_location["room"])
-    clean_dtl["building"] = buildings[days_time_location["building"]]
+
+            clean_dtl["day"] = weekdays[days_time_location["day"]]
+
+            clean_dtl["startTime"] = convert_time(days_time_location["startTime"])
+            clean_dtl["endTime"] = convert_time(days_time_location["endTime"])
+
+            # List of `days_time_location["site"]` vals:
+            #   - Castle Point: on-campus class
+            #   - WS: web class (no date time info, building will be "OFF" and room will be "WEB")
+            #   - LE: idk yet (building will be "OFF" and room will be "CLOSED")
+            if days_time_location["site"] == "Castle Point" and days_time_location["site"] != "TBA":        # does not support web classes yet
+                # `room` key is handled before `building` b/c `room` relies on the building
+                # code, which would be written over if `building` was handled first.
+                clean_dtl["room"] = str(days_time_location["building"] + " " + days_time_location["room"])
+                clean_dtl["building"] = buildings[days_time_location["building"]]
+            else:
+                print("Class not supported yet!") # TODO: find a better error reporting function than this
 
     return clean_dtl

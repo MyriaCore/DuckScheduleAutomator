@@ -91,7 +91,7 @@ class DuckSection(DuckClass):
 
     # TODO: add a constructor that recieves the raw json object.
 
-    def __init__(self, course_code, title, subject, prereqs, coreqs, term, days_time_location, instructor, call_number, section_id):
+    def __init__(self, course_code, title, subject, prereqs, coreqs, term, days_time_location, instructors, call_number, section_id):
         """
         Constructor for a `DuckSection` object, representing a section for a specific `DuckClass`.
         `course_code` is the shortened name of the course (PEP111 for example)
@@ -110,7 +110,7 @@ class DuckSection(DuckClass):
         self.__coreqs__ = coreqs
         self.__term__ = term
         self.__days_time_location__ = days_time_location
-        self.__instructor__ = instructor
+        self.__instructors__ = instructors
         self.__call_number__ = call_number
         self.__section_id__ = section_id
 
@@ -120,7 +120,10 @@ class DuckSection(DuckClass):
         `section_map` The json-like dictionary representing a class section.
             The kind that comes from `term_sections`.
         """
-        pass # TODO: implement - Zac
+        self.__days_time_location__ = section_map["daysTimeLocation"]
+        self.__instructors__ =section_map["instructors"]
+
+
 
     @property
     def prereqs(self):

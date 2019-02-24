@@ -16,7 +16,7 @@
 ## Intro / Lay of the land
 The main site that [SITScheduler](http://sitscheduler.com/) seems to be using for information is
 [https://stevens-scheduler.cfapps.io/](https://stevens-scheduler.cfapps.io/), which seems to have
-its most get request endpoints located at [[https://stevens-scheduler.cfapps.io/](https://stevens-scheduler.cfapps.io/p/)].
+its most get request endpoints located at [https://stevens-scheduler.cfapps.io](https://stevens-scheduler.cfapps.io/p/).
 
 | Request Type | Request URL | Response Description |
 |--------------|-------------|----------------------|
@@ -82,5 +82,87 @@ Request Response:
   {...},
   {...},
   ...]
+```
+### Prerequisites and Corequisites
+Pre and Co requisites are sorta weird in this API. They seem to be tailor made for displaying on sitscheduler, as when they 
+become too large, they have `<br>` tags, like they were a rich text field. It is unknown whether or not `or`'s after a `<br>` 
+tag are meant to be read as if the `<br>` wasn't there, or if it's the start of a new set of Pre-requisites.
+
+It is very likely that a deep text search will have to be employed to programmatically find pre and co-requisites.
+
+Listed below are a few examples. from a query for 2019S.
+
+#### Pre and Co Requisite Examples
+```json
+{
+    "section": "CS 370A",
+    "title": "Creative Prob. Solv & Team Prog.",
+    "callNumber": "10458",
+    "credits": 3,
+    "maxEnrollment": "36",
+    "currentEnrollment": "36",
+    "status": "C",
+    "instructor": "Borowski B",
+    "daysTimeLocation": [
+      {
+        "day": "M",
+        "startTime": "13:15:00Z",
+        "endTime": "15:45:00Z",
+        "site": "Castle Point",
+        "building": "NB",
+        "room": "105"
+      }
+    ],
+    "prereqs": "Prerequisite: CS  385 or CS  182<br>or Prerequisite: CS  590 or CPE 590<br>or Prerequisite: CPE 385",
+    "coreqs": ""
+}
+```
+```json
+{
+    "section": "CS 385RA",
+    "title": "Algorithms",
+    "callNumber": "10460",
+    "credits": 0,
+    "maxEnrollment": "27",
+    "currentEnrollment": "25",
+    "status": "O",
+    "instructor": "Zamlynny W",
+    "daysTimeLocation": [
+      {
+        "day": "F",
+        "startTime": "10:00:00Z",
+        "endTime": "10:50:00Z",
+        "site": "Castle Point",
+        "building": "NB",
+        "room": "102"
+      }
+    ],
+    "prereqs": "Prerequisite: CS  284 or CS  181",
+    "coreqs": "Corequisite: LEC",
+}
+```
+```json
+{
+    "section": "MA 123A",
+    "title": "Series,Vectors,Functns & Surface",
+    "callNumber": "11022",
+    "credits": 2,
+    "maxEnrollment": "50",
+    "currentEnrollment": "56",
+    "status": "C",
+    "instructor": "Serbin D",
+    "daysTimeLocation": [
+      {
+        "day": "MWF",
+        "startTime": "4:00:00Z",
+        "endTime": "4:50:00Z",
+        "site": "Castle Point",
+        "building": "K",
+        "room": "360"
+      }
+    ],
+    "prereqs": "Prerequisite: MA  122 or MA  115",
+    "coreqs": "Corequisite: RCT<br>--- and D   110A<br>--- and MA  124AA"
+},
 ```
 <!-- TODO: format all of this better for later -->
