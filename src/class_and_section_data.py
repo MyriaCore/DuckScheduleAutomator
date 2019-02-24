@@ -35,9 +35,12 @@ def __clean__(section):
     Takes a list of dictionaries as input and returns a cleaned up version where the values aren't all strings
     """
     # To keep track of keys that have to be handled and not copied over
+
     unsafe_keys = ["maxEnrollment", "currentEnrollment", "daysTimeLocation"]
 
-    for key in keys(section):
+    clean_section = {}
+
+    for key in list(section.keys()):
         if key not in unsafe_keys:
             clean_section[key] = deepcopy(section[key])
         else:
@@ -78,6 +81,8 @@ def __clean_days_time_location__(days_time_location):
         "P": "607 River St, Hoboken, NJ 07030",
         "X": "McLean Hall, Hoboken, NJ 07030"
     }
+
+    clean_dtl = {}
 
     clean_dtl["day"] = weekdays[days_time_location["day"]]
     clean_dtl["startDate"] = None # TODO: implement
