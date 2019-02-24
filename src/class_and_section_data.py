@@ -1,6 +1,6 @@
 import requests
 from copy import deepcopy
-from date_util import convert_time
+from src.date_util import convert_time
 
 def terms():
     """
