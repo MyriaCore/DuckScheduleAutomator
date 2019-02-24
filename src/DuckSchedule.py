@@ -1,5 +1,4 @@
-from class_and_section_data import terms, term_sections
-
+from src import class_and_section_data
 class DuckSchedule(object):
     def __init__(self, name, enrolled_classes, term, no_class_hours):
         """
