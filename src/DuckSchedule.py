@@ -88,10 +88,7 @@ class DuckClass(object):
 
 
 class DuckSection(DuckClass):
-
-    # TODO: add a constructor that recieves the raw json object.
-
-    def __init__(self, course_code, title, subject, prereqs, coreqs, term, days_time_location, instructors, call_number, section_id):
+    def __init__(self, course_code, title, subject, prereqs, coreqs, term, days_time_location, instructor, call_number, section_id):
         """
         Constructor for a `DuckSection` object, representing a section for a specific `DuckClass`.
         `course_code` is the shortened name of the course (PEP111 for example)
@@ -110,7 +107,7 @@ class DuckSection(DuckClass):
         self.__coreqs__ = coreqs
         self.__term__ = term
         self.__days_time_location__ = days_time_location
-        self.__instructors__ = instructors
+        self.__instructor__ = instructor
         self.__call_number__ = call_number
         self.__section_id__ = section_id
 
@@ -120,10 +117,25 @@ class DuckSection(DuckClass):
         `section_map` The json-like dictionary representing a class section.
             The kind that comes from `term_sections`.
         """
+        # TODO: add a constructor that recieves the raw json object.
+        super().__init__(section_map["section"], section_map["title"], section_map["subject"])
         self.__days_time_location__ = section_map["daysTimeLocation"]
-        self.__instructors__ =section_map["instructors"]
+        self.__instructors__ = section_map["instructors"]
+        self.__prereqs__ = [DuckClass.__init__(pre_req, "TODO", pre_req.split()[0]) for pre_req in section_map["prereqs"]]
+        self.__coreqs__ = [self.__resolve_coreq__(co_req) for co_req in section_map["coreqs"]]
+        self.__call_number__ = section_map["callNumber"]
+        # TODO: ensure this doesn't cut off section id's w/ more than one character!
+        self.__section_id__ = section_map["section"][-1]
+        self.__term__ = section_map["term"] # `DuckTerm` object reification is handled in `DuckTerm.__get_sections__()`.
 
-
+    def __resolve_coreq__(self, coreq):
+        """
+        Static helper function to be used in constructor and generally around the class.
+        :param coreq: A string representing  a corequisite (as given from `class_and_section_data`)
+        :return: A valid `DuckClass` or `DuckSection` depending on what is needed
+        """
+        # Note: if coreq is , then some sentinel value needs to be placed.
+        pass # TODO
 
     @property
     def prereqs(self):
@@ -142,6 +154,7 @@ class DuckSection(DuckClass):
 
     @property
     def days_time_location(self):
+        """A map representing the days, times, and locations this section will take place in."""
         return self.__days_time_location__
 
     @property
@@ -151,8 +164,7 @@ class DuckSection(DuckClass):
 
     @property
     def call_number(self):
-        """an integer representing the course call number used to sign up."""
-        # TODO: consider having this be a string.
+        """A string representing the course call number used to sign up."""
         return self.__call_number__
 
     @property
@@ -160,6 +172,7 @@ class DuckSection(DuckClass):
         """A string representing the section ID for the course
         (the 'A' in PEP111A, or the RC in PEP111RC)"""
         return self.__section_id__
+
 
 class DuckTerm(object):
     def __init__(self, name):
@@ -177,19 +190,19 @@ class DuckTerm(object):
 
     def sections(self):
         """
-        A list of `DuckSections` representing all of the sections offered in the term.
+        A list of `DuckSection` objects representing all of the sections offered in the term.
         """
         return self.__sections__
 
     def __get_sections__(self):
         """
-        Helper function to get the sections for the term as a list of
-        `DuckSection`'s.
+        Helper function to get the sections for the term as a list of `DuckSection` objects.
         """
         if self.__name__:
-            raw_sections = term_sections(self.__name__)
-            return map((lambda x: DuckSection(x)), raw_sections)
+            # TODO: check to make sure this doesnt blow right up
+            raw_sections = list(map(lambda x: x.update({"term": self}), term_sections(self.__name__)))
+            return list(map(lambda x: DuckSection.__init__(x), raw_sections))
         else:
-            raise Exception("Didn't have name information required for function!")
+            raise Exception("Parameter `name` in DuckTerm object not set!")
 
     # TODO: functions to query the term, like get_sections_by_name, or get_sections_by_subject, etc.

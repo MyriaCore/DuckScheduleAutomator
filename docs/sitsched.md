@@ -138,7 +138,7 @@ Listed below are a few examples. from a query for 2019S.
       }
     ],
     "prereqs": "Prerequisite: CS  284 or CS  181",
-    "coreqs": "Corequisite: LEC",
+    "coreqs": "Corequisite: LEC"
 }
 ```
 ```json
@@ -163,6 +163,6 @@ Listed below are a few examples. from a query for 2019S.
     ],
     "prereqs": "Prerequisite: MA  122 or MA  115",
     "coreqs": "Corequisite: RCT<br>--- and D   110A<br>--- and MA  124AA"
-},
+}
 ```
 <!-- TODO: format all of this better for later -->
