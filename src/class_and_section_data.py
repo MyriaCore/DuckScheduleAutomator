@@ -4,27 +4,6 @@ import xmltodict as xml
 from src.date_util import convert_time, convert_date
 import re
 
-def slurp(path):
-    """
-    Reads a file in as a string, and literally just returns the string.
-    :param path: filepath for the file, used by `open`.
-    :return: String representing the contents of the file.
-    """
-    with open(path, "r") as file:
-        return file.read()
-
-def spit(path, content):
-    """
-    Writes a file from a string. Returns None.
-    :param path: Filepath for the file, as used by `open`.
-    :param content: String representing content to write to file.
-    :return: None.
-    """
-    with open(path, "w") as file:
-        file.write(content)
-
-
-
 def terms():
     """
     Returns a list of valid term codes.
