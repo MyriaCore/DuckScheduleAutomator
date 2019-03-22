@@ -2,12 +2,13 @@
 
 ## Navigation
 - Pages
-  - [Home](home.md)
-  - [SIT Scheduler API Documentation](sitsched.md)
-  - [Course Signup System API Documentation](signup.md)
-- SIT Scheduler API Docs
+    - [Home](home.md)
+    - [SIT Scheduler API Documentation](sitsched.md)
+    - [Stevens.edu Web Scheduler API Documentation](stevens-scheduler.md)
+    - [Course Signup System API Documentation](signup.md)
+- Sections
 	- [Navigation](#navigation)
-	- [Intro / Lay of the land](#intro-lay-of-the-land)
+	- [Intro / Lay of the land](#intro--lay-of-the-land)
 	- [Available Term Codes](#available-term-codes)
 		- [Example Response](#example-response)
 	- [Per-Term Section Info](#per-term-section-info)

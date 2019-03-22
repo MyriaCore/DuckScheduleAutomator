@@ -1,9 +1,19 @@
 # Course Sign Up System API Docs
 
 ## Navigation
-- [Home](home.md)
-- [SIT Scheduler API Documentation](sitsched.md)
-- [Course Signup System API Documentation](signup.md)
+- Pages
+    - [Home](home.md)
+    - [SIT Scheduler API Documentation](sitsched.md)
+    - [Stevens.edu Web Scheduler API Documentation](stevens-scheduler.md)
+    - [Course Signup System API Documentation](signup.md)
+- Sections
+    - [Intro](#intro)
+    - [Site Structure](#site-structure)
+    - [HTML](#html)
+    - [Misc. Scripts](#misc-scripts)
+    - [ajax.js](#ajaxjs)
+    - [drupal.js](#drupaljs)
+    - [progress.js](#progressjs)
 
 <!-- TODO: Find a less spammy way to include the site's files -->
 <!-- TODO: Add a table of contents to this -->
