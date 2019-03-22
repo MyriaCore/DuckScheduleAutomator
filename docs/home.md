@@ -7,7 +7,7 @@
     - [Stevens.edu Web Scheduler API Documentation](stevens-scheduler.md)
     - [Course Signup System API Documentation](signup.md)
 - Sections
-    - [Intro / Lay of the Land](#intro-lay-of-the-land)
+    - [Intro / Lay of the Land](#intro--lay-of-the-land)
 
 ## Intro / Lay of the Land
 This is probably gonna be the worst documentation you've read in your entire life, so bear with me here.

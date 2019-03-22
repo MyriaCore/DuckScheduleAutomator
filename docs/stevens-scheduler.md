@@ -6,7 +6,7 @@
     - [Stevens.edu Web Scheduler API Documentation](stevens-scheduler.md)
     - [Course Signup System API Documentation](signup.md)
 - Sections
-    - [Intro / Lay of the Land](#intro-lay-of-the-land)
+    - [Intro / Lay of the Land](#intro--lay-of-the-land)
     - [Directory Structure](#directory-structure)
     - [API Commands](#api-commands)
     - [Help Page](#help-page)
