@@ -1,33 +1,73 @@
 import requests
 from copy import deepcopy
-from src.date_util import convert_time
+import xmltodict as xml
+from src.date_util import convert_time, convert_date
+import re
+
+def slurp(path):
+    """
+    Reads a file in as a string, and literally just returns the string.
+    :param path: filepath for the file, used by `open`.
+    :return: String representing the contents of the file.
+    """
+    with open(path, "r") as file:
+        return file.read()
+
+def spit(path, content):
+    """
+    Writes a file from a string. Returns None.
+    :param path: Filepath for the file, as used by `open`.
+    :param content: String representing content to write to file.
+    :return: None.
+    """
+    with open(path, "w") as file:
+        file.write(content)
+
+
 
 def terms():
     """
     Returns a list of valid term codes.
     """
-    rterms = requests.get('https://stevens-scheduler.cfapps.io/p/terms')
+    rterms = requests.get("https://web.stevens.edu/scheduler/core/core.php?cmd=terms")
 
     if rterms.status_code == 200:
-        return list(rterms.json())
+        return list(map(lambda d: {"code": d["@Code"], "name": d["@Name"]},xml.parse(rterms.text)["Terms"]["Term"]))
     else:
-        raise Exception('Request returned invalid status code ' + rterms.status_code + '.')
+        raise Exception("Request returned invalid status code " + rterms.status_code + ".")
 
-def term_sections(term):
+def semester(term_code):
     """
-    Takes in a string `term` representing a valid termcode (2019S for example)
-    and returns a list of maps representing all of the classes available in
-    that term.
-    NOTE: atm all values are strings.
+    Returns a dictionary representing a semester, and the courses and sections offered in it.
+    :param term_code:
+    :return:
     """
-    if term in terms():
-        rsections = requests.get('https://stevens-scheduler.cfapps.io/p/' + term)
+    if term_code in list(map(lambda d: d["code"], terms())):
+        rsections = requests.get("https://web.stevens.edu/scheduler/core/core.php?cmd=getxml&terms=" + term_code)
         if rsections.status_code == 200:
-            return map(__clean__, list(rsections.json()))
+            data = xml.parse(rsections.text)["Semester"]
+            result = {
+                "semester": data["@Semester"],
+                "courses": int(data["@Courses"]),
+                "meetings": int(data["@Meetings"]),
+                "requirements": int(data["@Requirements"]),
+                "courses":  list(map(lambda d: __clean__(d), data["Course"]))
+            }
+
         else:
-            raise Exception('Request returned invalid status code ' + rsections.status_code + '.')
+            raise Exception("Request returned invalid status code " + rsections.status_code + ".")
     else:
-        raise Exception(term + ' is not a valid term code!')
+        raise ValueError("The provided term code was invalid. \nExpected one of the following:" +
+                         ", ".join(list(map(lambda d: d["code"], terms()))) + "\nReceived: " + term_code)\
+
+
+def __clean_key__(key):
+    """
+    Helper function used in clean
+    :param key: String, representing a key in a dictionary
+    :return: String, representing a cleaned key in a dictionary
+    """
+    return str(re.sub("([a-z])([A-Z])", lambda m: m.group(1) + "-" + str(m.group(2)).lower(), str(key).replace("@", ""))).lower()
 
 
 def __clean__(section):
@@ -35,27 +75,32 @@ def __clean__(section):
     Takes a list of dictionaries as input and returns a cleaned up version where the values aren't all strings
     """
     # To keep track of keys that have to be handled and not copied over
-    unsafe_keys = ["maxEnrollment", "currentEnrollment", "daysTimeLocation", "prereqs", "coreqs", "status"]
+
+    unsafe_keys = ["@StartDate", "@EndDate", "@Status", "@CurrentEnrollment", "@MaxEnrollment", "@MinCredit", "@MaxCredit", "Meeting"]
     clean_section = {}
 
     for key in list(section.keys()):
         if key not in unsafe_keys:
-            clean_section[key] = deepcopy(section[key])
-        elif key == "maxEnrollment":
-            clean_section["maxEnrollment"] = int(section["maxEnrollment"])
-        elif key == "currentEnrollment":
-            clean_section["currentEnrollment"] = int(section["currentEnrollment"])
-        elif key == "status":
-            clean_section["status"] = "Closed" if section["status"] == "C" \
-                else "Open" if section["status"] == "O" else "Unknown"
-
-        elif key == "daysTimeLocation":
-            if type(section["daysTimeLocation"]) is dict:
-                clean_section["daysTimeLocation"] = __clean_days_time_location__(section["daysTimeLocation"])
-            elif type(section["daysTimeLocation"]) is list:
-                clean_section["daysTimeLocation"] = list(map(__clean_days_time_location__, section["daysTimeLocation"]))
+            clean_section[__clean_key__(key)] = deepcopy(section[key])
+        elif key in ["@CurrentEnrollment", "@MaxEnrollment", "@MinCredit", "@MaxCredit"]:
+            clean_section[__clean_key__(key)] = int(section[key])
+        elif key in ["@StartDate", "@EndDate"]:
+            clean_section[__clean_key__(key)] = convert_date(section[key])
+        elif key == "@Status":
+            clean_section["status"] = \
+                "Closed" if section["@Status"] == "C" \
+                else "open" if section["@Status"] == "O" \
+                else "hold" if section["@Status"] == "H" \
+                else "cancelled" if section["@Status"] == "X" \
+                else "unknown"
+        elif key == "Meeting":
+            if type(section["Meeting"]) is dict:
+                clean_section["meeting"] = __clean_meeting__(section["Meeting"])
+            elif type(section["Meeting"]) is list:
+                clean_section["meetings"] = list(map(__clean_meeting__, section["Meeting"]))
             else:
-                raise Exception("daysTimeLocation should either be a dictionary or a list!")
+                # TODO: ensure this doesnt crash (since the xml uses Ordered Dicts)
+                raise Exception("Meeting should either be a dictionary or a list!")
 
         # For notes on prereqs and coreqs, visit the docs section of `sitsched.md`
         # TODO: use nested lists for dealing with ands and ors.
@@ -74,14 +119,15 @@ def __clean__(section):
     return clean_section
 
 
-def __clean_days_time_location__(days_time_location):
+def __clean_meeting__(meeting):
     """Helper function for __clean__, handles daysTimeLocation key."""
-    unsafe_keys = ["day", "room", "building"]
-    clean_dtl = {}
+    # TODO: implement and test
+    unsafe_keys = ["@Day", "@StartTime", "@EndTime"]
+    clean_meeting = {}
 
-    for key in list(days_time_location.keys()):
+    for key in list(meeting.keys()):
         if key not in unsafe_keys:
-            clean_dtl[key] = deepcopy(days_time_location[key])
+            clean_meeting[__clean_key__(key)] = deepcopy(meeting[key])
         else:
             # Used for the `day` key.
             weekdays = {
@@ -106,23 +152,23 @@ def __clean_days_time_location__(days_time_location):
                 "TBA": "TBA"
             }
 
-            clean_dtl["day"] = [weekdays[day_code] for day_code in days_time_location["day"]]
+            clean_meeting["day"] = [weekdays[day_code] for day_code in meeting["@Day"]]
 
-            if (days_time_location["startTime"] and days_time_location["endTime"]):
-                clean_dtl["startTime"] = convert_time(days_time_location["startTime"])
-                clean_dtl["endTime"] = convert_time(days_time_location["endTime"])
+            if (meeting["startTime"] and meeting["endTime"]):
+                clean_meeting["startTime"] = convert_time(meeting["startTime"])
+                clean_meeting["endTime"] = convert_time(meeting["endTime"])
 
-            # List of `days_time_location["site"]` vals:
+            # List of `meeting["site"]` vals:
             #   - Castle Point: on-campus class
             #   - WS: web class (no date time info, building will be "OFF" and room will be "WEB")
             #   - LE: idk yet (building will be "OFF" and room will be "CLOSED")
-            if days_time_location["site"] == "Castle Point" and days_time_location["site"] != "TBA":
+            if meeting["site"] == "Castle Point" and meeting["site"] != "TBA":
                 # `room` key is handled before `building` b/c `room` relies on the building
                 # code, which would be written over if `building` was handled first.
-                clean_dtl["room"] = str(days_time_location["building"] + " " + days_time_location["room"])
-                clean_dtl["building"] = buildings[days_time_location["building"]]
+                clean_meeting["room"] = str(meeting["building"] + " " + meeting["room"])
+                clean_meeting["building"] = buildings[meeting["building"]]
             else:
                 print("Class not supported yet!")
                 # TODO: add some kind of optionality here so it can
                 #  still handle web classes and 2nd half-semester MA classes
-    return clean_dtl
+    return clean_meeting
