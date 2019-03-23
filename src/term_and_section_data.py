@@ -20,7 +20,7 @@ def __clean__(section):
     Private helper function used by `sections`. Goes through an individual dictionary describing a section and
     makes sure the data types, structures, etc described by the raw dictionary are correct and properly pythonic.
     """
-    unsafe_keys = ["Requirement", "@StartDate", "@Status", "@CurrentEnrollment", "@MaxEnrollment", "@MinCredit", "@MaxCredit", "Meeting"]
+    unsafe_keys = ["Requirement", "@StartDate", "@EndDate", "@Status", "@CurrentEnrollment", "@MaxEnrollment", "@MinCredit", "@MaxCredit", "Meeting"]
     clean_section = {}
 
     for key in list(section.keys()):
@@ -92,17 +92,17 @@ def __clean_requirements__(requirement):
         "PUA": "UGs need permission of Dean of UG Academics"
     }
     return {
-        requirement["@Control"]: [requirement["@Value1"]]
-            + ([requirement["@Value2"]] if requirement["@Value2"] != "" else []),
-        "text": control_codes[requirement["@Control"]] + ": " + requirement["@Value1"]
-            + (", " + requirement["@Value2"] if requirement["@Value2"] != "" else "")
+        "description": control_codes[requirement["@Control"]] + ": " + requirement["@Value1"]
+            + (", " + requirement["@Value2"] if requirement["@Value2"] != "" else ""),
+        "code_list": list(filter(lambda s: s != "",
+            [requirement["@Control"], requirement["@Value1"], requirement["@Value2"]])),
     }
 
 def __clean_meeting__(meeting):
     """
     Private helper function used by `__clean__`, handles `@Meeting` key.
     """
-    unsafe_keys = ["@Day", "@StartTime"]
+    unsafe_keys = ["@Day", "@StartTime", "@EndTime"]
     clean_meeting = {}
 
     for key in list(meeting.keys()):
@@ -164,5 +164,6 @@ def test():
     with open("data/2019F.xml", "r") as f:
         myxml = xml.parse(f.read())["Semester"]
         f.close()
-    ex_class = dict(random.choice(list(filter(lambda x: "CS 284" in x["@Section"], myxml["Course"]))))
+    ex_class = dict(random.choice(list(filter(lambda x: "CS 284A" in x["@Section"], myxml["Course"]))))
     return __clean__(ex_class)
+
