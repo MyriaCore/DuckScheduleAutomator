@@ -6,42 +6,6 @@ import re
 import random
 from collections import OrderedDict
 
-def terms():
-    """
-    Returns a list of python dictionaries representing valid terms to query.
-    The two valid keys in each dictionary are `"code"`, which is the term code described,
-    and `"description"`, which is a short description of what the term is.
-    :return: (list of dict's) A list of terms the server knows about
-    """
-    rterms = requests.get("https://web.stevens.edu/scheduler/core/core.php?cmd=terms")
-
-    if rterms.status_code == 200:
-        return list(map(lambda d: {"code": d["@Code"], "description": d["@Name"]},xml.parse(rterms.text)["Terms"]["Term"]))
-    else:
-        raise Exception("Request returned invalid status code " + rterms.status_code + ".")
-
-def sections(term_code):
-    """
-    Returns a python dictionary representing the course sections available in a term.
-    See docs/home.md for details about possible keys and values the dictionaries can have.
-    :param term_code:
-    :return:
-    """
-    if term_code in list(map(lambda d: d["code"], terms())):
-        rsections = requests.get("https://web.stevens.edu/scheduler/core/core.php?cmd=getxml&terms=" + term_code)
-        if rsections.status_code == 200:
-            data = xml.parse(rsections.text)["Semester"]
-            return {
-                "semester": data["@Semester"], # semester code, like 2019F
-                "courses":  list(map(lambda d: __clean__(d), data["Course"]))
-            }
-        else:
-            raise Exception("Request returned invalid status code " + rsections.status_code + ".")
-    else:
-        raise ValueError("The provided term code was invalid. \nExpected one of the following:" +
-                         ", ".join(list(map(lambda d: d["code"], terms()))) + "\nReceived: " + term_code)
-
-
 def __clean_key__(key):
     """
     Helper function used in clean
@@ -159,6 +123,42 @@ def __clean_meeting__(meeting):
                 clean_meeting["time_span"] = (convert_time(meeting["@StartTime"]), convert_time(meeting["@EndTime"]))
 
     return clean_meeting
+
+
+def terms():
+    """
+    Returns a list of python dictionaries representing valid terms to query.
+    The two valid keys in each dictionary are `"code"`, which is the term code described,
+    and `"description"`, which is a short description of what the term is.
+    :return: (list of dict's) A list of terms the server knows about
+    """
+    rterms = requests.get("https://web.stevens.edu/scheduler/core/core.php?cmd=terms")
+
+    if rterms.status_code == 200:
+        return list(map(lambda d: {"code": d["@Code"], "description": d["@Name"]},xml.parse(rterms.text)["Terms"]["Term"]))
+    else:
+        raise Exception("Request returned invalid status code " + rterms.status_code + ".")
+
+def sections(term_code):
+    """
+    Returns a python dictionary representing the course sections available in a term.
+    See docs/home.md for details about possible keys and values the dictionaries can have.
+    :param term_code:
+    :return:
+    """
+    if term_code in list(map(lambda d: d["code"], terms())):
+        rsections = requests.get("https://web.stevens.edu/scheduler/core/core.php?cmd=getxml&terms=" + term_code)
+        if rsections.status_code == 200:
+            data = xml.parse(rsections.text)["Semester"]
+            return {
+                "semester": data["@Semester"], # semester code, like 2019F
+                "courses":  list(map(lambda d: __clean__(d), data["Course"]))
+            }
+        else:
+            raise Exception("Request returned invalid status code " + rsections.status_code + ".")
+    else:
+        raise ValueError("The provided term code was invalid. \nExpected one of the following:" +
+                         ", ".join(list(map(lambda d: d["code"], terms()))) + "\nReceived: " + term_code)
 
 def test():
     with open("data/2019F.xml", "r") as f:
