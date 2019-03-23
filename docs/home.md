@@ -20,6 +20,6 @@ Right now, there are 4 pages: this one, [one about the website sitscheduler.com]
 [one about web.stevens.edu/scheduler](stevens-scheduler.md), and finally [one about the official stevens signup portal](signup.md).
 Documentation about sitscheduler was included because it was thought to be the best / easiest source of class information, but 
 recent findings have revealed that web.stevens.edu/scheduler is a more reliable and official source of class information.
-<!-- TODO -->
+<!-- TODO: Document actual code and what it give back -->
 
 

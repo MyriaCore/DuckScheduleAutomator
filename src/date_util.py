@@ -5,7 +5,7 @@ def convert_date(date):
     """
     `date` is a date string ending in z (Ex: '2019-08-26Z')
     """
-    return datetime.strptime(date, "%Y-%M-%D" + "Z").date()
+    return datetime.strptime(date, "%Y-%m-%d" + "Z").date()
 
 def convert_time(time):
     """

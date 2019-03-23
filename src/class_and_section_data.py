@@ -3,21 +3,27 @@ from copy import deepcopy
 import xmltodict as xml
 from src.date_util import convert_time, convert_date
 import re
+import random
+from collections import OrderedDict
 
 def terms():
     """
-    Returns a list of valid term codes.
+    Returns a list of python dictionaries representing valid terms to query.
+    The two valid keys in each dictionary are `"code"`, which is the term code described,
+    and `"description"`, which is a short description of what the term is.
+    :return: (list of dict's) A list of terms the server knows about
     """
     rterms = requests.get("https://web.stevens.edu/scheduler/core/core.php?cmd=terms")
 
     if rterms.status_code == 200:
-        return list(map(lambda d: {"code": d["@Code"], "name": d["@Name"]},xml.parse(rterms.text)["Terms"]["Term"]))
+        return list(map(lambda d: {"code": d["@Code"], "description": d["@Name"]},xml.parse(rterms.text)["Terms"]["Term"]))
     else:
         raise Exception("Request returned invalid status code " + rterms.status_code + ".")
 
-def semester(term_code):
+def sections(term_code):
     """
-    Returns a dictionary representing a semester, and the courses and sections offered in it.
+    Returns a python dictionary representing the course sections available in a term.
+    See docs/home.md for details about possible keys and values the dictionaries can have.
     :param term_code:
     :return:
     """
@@ -25,19 +31,15 @@ def semester(term_code):
         rsections = requests.get("https://web.stevens.edu/scheduler/core/core.php?cmd=getxml&terms=" + term_code)
         if rsections.status_code == 200:
             data = xml.parse(rsections.text)["Semester"]
-            result = {
-                "semester": data["@Semester"],
-                "courses": int(data["@Courses"]),
-                "meetings": int(data["@Meetings"]),
-                "requirements": int(data["@Requirements"]),
+            return {
+                "semester": data["@Semester"], # semester code, like 2019F
                 "courses":  list(map(lambda d: __clean__(d), data["Course"]))
             }
-
         else:
             raise Exception("Request returned invalid status code " + rsections.status_code + ".")
     else:
         raise ValueError("The provided term code was invalid. \nExpected one of the following:" +
-                         ", ".join(list(map(lambda d: d["code"], terms()))) + "\nReceived: " + term_code)\
+                         ", ".join(list(map(lambda d: d["code"], terms()))) + "\nReceived: " + term_code)
 
 
 def __clean_key__(key):
@@ -46,108 +48,121 @@ def __clean_key__(key):
     :param key: String, representing a key in a dictionary
     :return: String, representing a cleaned key in a dictionary
     """
-    return str(re.sub("([a-z])([A-Z])", lambda m: m.group(1) + "-" + str(m.group(2)).lower(), str(key).replace("@", ""))).lower()
+    return str(re.sub("([a-z])([A-Z1-9])", lambda m: m.group(1) + "_" + str(m.group(2)).lower(), str(key).replace("@", ""))).lower()
 
 
 def __clean__(section):
     """
-    Takes a list of dictionaries as input and returns a cleaned up version where the values aren't all strings
+    Private helper function used by `sections`. Goes through an individual dictionary describing a section and
+    makes sure the data types, structures, etc described by the raw dictionary are correct and properly pythonic.
     """
-    # To keep track of keys that have to be handled and not copied over
-
-    unsafe_keys = ["@StartDate", "@EndDate", "@Status", "@CurrentEnrollment", "@MaxEnrollment", "@MinCredit", "@MaxCredit", "Meeting"]
+    unsafe_keys = ["Requirement", "@StartDate", "@Status", "@CurrentEnrollment", "@MaxEnrollment", "@MinCredit", "@MaxCredit", "Meeting"]
     clean_section = {}
 
     for key in list(section.keys()):
         if key not in unsafe_keys:
             clean_section[__clean_key__(key)] = deepcopy(section[key])
-        elif key in ["@CurrentEnrollment", "@MaxEnrollment", "@MinCredit", "@MaxCredit"]:
+        if key in ["@CurrentEnrollment", "@MaxEnrollment", "@MinCredit", "@MaxCredit"]:
             clean_section[__clean_key__(key)] = int(section[key])
-        elif key in ["@StartDate", "@EndDate"]:
-            clean_section[__clean_key__(key)] = convert_date(section[key])
-        elif key == "@Status":
+        if key == "@StartDate":
+            clean_section["date_span"] = (convert_date(section["@StartDate"]), convert_date(section["@EndDate"]))
+        if key == "@Status":
             clean_section["status"] = \
-                "Closed" if section["@Status"] == "C" \
-                else "open" if section["@Status"] == "O" \
-                else "hold" if section["@Status"] == "H" \
-                else "cancelled" if section["@Status"] == "X" \
+                "Closed" if section[key] == "C" \
+                else "open" if section[key] == "O" \
+                else "hold" if section[key] == "H" \
+                else "cancelled" if section[key] == "X" \
                 else "unknown"
-        elif key == "Meeting":
-            if type(section["Meeting"]) is dict:
-                clean_section["meeting"] = __clean_meeting__(section["Meeting"])
-            elif type(section["Meeting"]) is list:
-                clean_section["meetings"] = list(map(__clean_meeting__, section["Meeting"]))
+        if key == "Meeting":
+            if type(section[key]) is dict or type(section[key]) is OrderedDict:
+                clean_section["meetings"] = [__clean_meeting__(section[key])]
+            elif type(section[key]) is list:
+                clean_section["meetings"] = list(map(__clean_meeting__, section[key]))
             else:
-                # TODO: ensure this doesnt crash (since the xml uses Ordered Dicts)
-                raise Exception("Meeting should either be a dictionary or a list!")
+                raise Exception("Meetings should either be a dictionary or a list!\nReceived: " + str(type(section[key])))
+        if key == "Requirement":
+            if type(section[key]) is dict or type(section[key]) is OrderedDict:
+                clean_section["requirements"] = [__clean_requirements__(section[key])]
+            elif type(section[key]) is list:
+                clean_section["requirements"] = list(map(__clean_requirements__, section[key]))
+            else:
+                raise Exception("Requirements should either be a dictionary or a list!\nReceived: " + str(type(section[key])))
 
-        # For notes on prereqs and coreqs, visit the docs section of `sitsched.md`
-        # TODO: use nested lists for dealing with ands and ors.
-        #  Example: ["or", ["and", "CS 123", "CS 135"], ["and", "MA 123", "MA 124"]]
-        #    This represents that you can have CS 123 and CS 135, or MA 123 and MA 124 to satisfy this condition
-        elif key == "prereqs":
-            clean_section["prereqs"] = list(map(lambda x: x.strip(), section["prereqs"]
-                                                .replace("Prerequisite:", "").replace("<br>", " ").split("or")))
-        elif key == "coreqs":
-            clean_section["coreqs"] = list(map( lambda x: x.strip(), section["coreqs"]
-                                                .replace("Corequisite:", "").replace("<br>", " ")
-                                                .replace("--- ", "").split("and")))
-
-    # TODO: find a way to match this to actual human-readable subjects, instead of things like "MA" or "PEP".
-    clean_section["subject"] = clean_section["section"].split(" ")[0].strip()
     return clean_section
 
 
+def __clean_requirements__(requirement):
+    """
+    Helper function used in __clean__, handles `@Requirement` key.
+    """
+    control_codes = {
+        "(BLANK)": "",
+        "CC": "Course corequisite required",
+        "CS": "Section corequisite required",
+        "CA": "Activity corequisite required",
+        "RQ": "Prerequisite course required",
+        "R&": "(cont.) Prerequisite course reqd",
+        "RQM": "Prereq course reqd w/ min grade",
+        "RM&": "(cont.) Prereq reqd w/ min grade",
+        "RQT": "Prerequisite test required",
+        "RT&": "(cont.) Prerequisite test required",
+        "NQ": "Concurrent Prereq course required",
+        "N&": "(cont.) Concur Prereq course reqd",
+        "NQM": "Concur Prereq reqd w/ min grade",
+        "NM&": "(cont.) Concur Prereq w/ min grade",
+        "MB": "By Application Only",
+        "MP": "Prerequisite Required",
+        "MC": "Corequisite Required",
+        "ML": "Lab Fee Required",
+        "MA": "Permission of Advisor Required",
+        "MI": "Permission of Instructor Required",
+        "MH": "Department Head Approval Required",
+        "MN": "No Credit Course for Departmental Majors",
+        "MS": "Studio course; No general Humanities credit",
+        "MW": "Women Only",
+        "PAU": "Auditors need instructor permission",
+        "PCG": "Permission needed from Continuing ED",
+        "PDP": "Permission needed from department",
+        "PIN": "Permission needed from instructor",
+        "PUN": "Undergrads need instructor permission",
+        "PUA": "UGs need permission of Dean of UG Academics"
+    }
+    return {
+        requirement["@Control"]: [requirement["@Value1"]]
+            + ([requirement["@Value2"]] if requirement["@Value2"] != "" else []),
+        "text": control_codes[requirement["@Control"]] + ": " + requirement["@Value1"]
+            + (", " + requirement["@Value2"] if requirement["@Value2"] != "" else "")
+    }
+
 def __clean_meeting__(meeting):
-    """Helper function for __clean__, handles daysTimeLocation key."""
-    # TODO: implement and test
-    unsafe_keys = ["@Day", "@StartTime", "@EndTime"]
+    """
+    Private helper function used by `__clean__`, handles `@Meeting` key.
+    """
+    unsafe_keys = ["@Day", "@StartTime"]
     clean_meeting = {}
 
     for key in list(meeting.keys()):
         if key not in unsafe_keys:
             clean_meeting[__clean_key__(key)] = deepcopy(meeting[key])
         else:
-            # Used for the `day` key.
             weekdays = {
-                "M": "Monday",
-                "T": "Tuesday",
-                "W": "Wednesday",
-                "R": "Thursday",
-                "F": "Friday",
-                "TBA": "TBA"
+                "M": "monday",
+                "T": "tuesday",
+                "W": "wednesday",
+                "R": "thursday",
+                "F": "friday",
+                "TBA": "tba"
             }
+            if key == "@Day":
+                clean_meeting["day"] = [weekdays[day_code] for day_code in meeting[key]]
+            if key == "@StartTime":
+                clean_meeting["time_span"] = (convert_time(meeting["@StartTime"]), convert_time(meeting["@EndTime"]))
 
-            # Converts building codes into addresses for the `building` key.
-            buildings = {
-                "E": "Edwin A. Stevens Hall Hoboken, NJ 07030",
-                "B": "Burchard Bldg Hoboken, NJ 07030",
-                "BC": "Babbio Center, River Street, Hoboken, NJ 07030",
-                "NB": "North Building, Castle Point Terrace, Hoboken, NJ 07030",
-                "K": "Kiddie Building, Hoboken, NJ 07030",
-                "M": "Morton Building, Hoboken, NJ 07030",
-                "P": "607 River St, Hoboken, NJ 07030", # TODO: get google maps to change this shit lmao
-                "X": "McLean Hall, Hoboken, NJ 07030",
-                "TBA": "TBA"
-            }
-
-            clean_meeting["day"] = [weekdays[day_code] for day_code in meeting["@Day"]]
-
-            if (meeting["startTime"] and meeting["endTime"]):
-                clean_meeting["startTime"] = convert_time(meeting["startTime"])
-                clean_meeting["endTime"] = convert_time(meeting["endTime"])
-
-            # List of `meeting["site"]` vals:
-            #   - Castle Point: on-campus class
-            #   - WS: web class (no date time info, building will be "OFF" and room will be "WEB")
-            #   - LE: idk yet (building will be "OFF" and room will be "CLOSED")
-            if meeting["site"] == "Castle Point" and meeting["site"] != "TBA":
-                # `room` key is handled before `building` b/c `room` relies on the building
-                # code, which would be written over if `building` was handled first.
-                clean_meeting["room"] = str(meeting["building"] + " " + meeting["room"])
-                clean_meeting["building"] = buildings[meeting["building"]]
-            else:
-                print("Class not supported yet!")
-                # TODO: add some kind of optionality here so it can
-                #  still handle web classes and 2nd half-semester MA classes
     return clean_meeting
+
+def test():
+    with open("data/2019F.xml", "r") as f:
+        myxml = xml.parse(f.read())["Semester"]
+        f.close()
+    ex_class = dict(random.choice(list(filter(lambda x: "CS 284" in x["@Section"], myxml["Course"]))))
+    return __clean__(ex_class)
