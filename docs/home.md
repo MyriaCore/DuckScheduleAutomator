@@ -30,17 +30,19 @@ recent findings have revealed that web.stevens.edu/scheduler is a more reliable 
 
 ## Our Code
 ### Term and Section Data
-The file `/src/term_and_section_data.py`, there are n functions of note.
+The file `/src/term_and_section_data.py`, there are currently 3 functions of note: `available_terms()`, `semester(term_code)`, and `course(course_name, term)`.
+Below is a table describing what these functions do.
 
 | Python Function | Description |
 |---|---|
-| `terms()` | Gets a list of python dictionaries describing terms that [stevens web server](https://web.stevens.edu/scheduler/core) knows about. |
-| `sections(term_code)` | Gets a list of python dictionaries describing course sections that are in a term. `term_code` is the api code for a specific term, as given by `terms()` |
+| `available_terms()` | Gets a list of python dictionaries describing semesters / terms  that [stevens web server](https://web.stevens.edu/scheduler/core) knows about. |
+| `semester(term_code)` | Returns a "semester dictionary", a python dictionary that describes a term or semester. It has only two keys: `"term"`, which is the term code for that semester, and `"sections"`, which is a list of "section dictionaries", which is described in the [Section Spec](#section-spec) section. |
+| `course_sections(term, course_name)` | Returns all of the sections in a term `term` that are related to a specific course `course`. It should be noted that `term` can either be a term code or a semester dictionary, and that `course_name` is the shorthand name of the course (i.e. `"CS 115"`).
 
-#### Term Spec
-A single term will have only two keys: `code`, and `description`. 
+#### Available Terms Spec
+A dictionary inside of the list returned by `available_terms()`  will have only two keys: `code`, and `description`. 
 
-`code` is a string that is used used in `sections(term_code)`. 
+`code` is a string that is used used in `semester(term_code)`. 
 
 `description` is a string with a short description of the term in question.
 
@@ -56,7 +58,7 @@ __**Examples:**__
 ``` 
 
 #### Section Spec
-A single section will have one of the items in the following table:
+A section dictionary (as given by `semester(term_code)["sections"]`) will be made up from the following keys: 
 
 | Key | Description |
 |---|---|
@@ -75,18 +77,17 @@ A single section will have one of the items in the following table:
 | `requirements` | A list of python dictionaries representing information about section requirements. For more information about section requirements, see the [Requirement Spec](#requirement-spec) section. |
 
 ##### Meeting Spec
-Every individual meeting will be described by a python dictionary with six keys: 
+A dictionary describing a section meeting (as given by `section["meetings]`) will contain six keys: 
 `"day"`, `"time_span"`, `"site"`, `"building"`, `"room"`, and `"activity"`. The six keys are described in the table below.
 
-<!-- TODO -->
 | Key | Description |
 |---|---|
-| `day` |  |
-| `time_span` |  |
-| `site` |  |
-| `building` |  |
-| `room` |  |
-| `activity` |  |
+| `day` | A list of strings representing the days this meeting is held on. possible values include `"monday"`, `"tuesday"`, `"wednesday"`, `"thursday"`, `"friday"`, and `"saturday"`. |
+| `time_span` | A tuple representing when the class starts and ends, in the form of `(start_time, end_time)`. Time will be represented as `datetime.time()`  objects. |
+| `site` | A string representing site information. Will most often be `"Castle Point"`. See the [Site Designators](stevens-scheduler.md#site-designators) section in [the page about the stevens web server](stevens-scheduler.md) for details about exceptions to this rule.|
+| `building` | A string representing the building code (i.e. `"BC"`) |
+| `room` | A string representing the room number (i.e. `"203"`) |
+| `activity` | The kind of activity the meeting is (`"LEC"` for lectures, `"RCT"` for recitations, `"LAB"` for labs, etc). See the [Activity Designators](stevens-scheduler.md#activity-designators) section in the [page about the stevens web server](stevens-scheduler.md) for details.|
 
 ##### Requirement Spec
 Every individual requirement will be a python dictionary with two keys: `"description"`, and `"code_list"`. 

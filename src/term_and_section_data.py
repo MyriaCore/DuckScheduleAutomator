@@ -119,16 +119,16 @@ def __clean_meeting__(meeting):
                         else "saturday" if d == "S" \
                         else "unknown"
             if key == "@Day":
-                clean_meeting["day"] = [weekdays(day_code) for day_code in meeting[key]]
+                clean_meeting["day"] = [weekdays(day_code) for day_code in meeting[key]] if "TBA" not in meeting[key] else ["TBA"]
             if key == "@StartTime":
                 clean_meeting["time_span"] = (convert_time(meeting["@StartTime"]), convert_time(meeting["@EndTime"]))
 
     return clean_meeting
 
 
-def terms():
+def available_terms():
     """
-    Returns a list of python dictionaries representing valid terms to query.
+    Returns a list of python dictionaries representing the semesters and terms that the server knows about.
     The two valid keys in each dictionary are `"code"`, which is the term code described,
     and `"description"`, which is a short description of what the term is.
     :return: (list of dict's) A list of terms the server knows about
@@ -136,18 +136,18 @@ def terms():
     rterms = requests.get("https://web.stevens.edu/scheduler/core/core.php?cmd=terms")
 
     if rterms.status_code == 200:
-        return list(map(lambda d: {"code": d["@Code"], "description": d["@Name"]},xml.parse(rterms.text)["Terms"]["Term"]))
+        return list(map(lambda d: {"code": d["@Code"], "description": d["@Name"]}, xml.parse(rterms.text)["Terms"]["Term"]))
     else:
         raise Exception("Request returned invalid status code " + rterms.status_code + ".")
 
 def semester(term_code):
     """
-    Returns a python dictionary representing the course sections available in a term.
+    Returns a python dictionary representing the course sections available in a semester.
     See docs/home.md for details about possible keys and values the dictionaries can have.
-    :param term_code:
-    :return:
+    :param term_code: Term code representing the semester (i.e. 2019F)
+    :return: List of sections representing the course sections available in that semester.
     """
-    if term_code in list(map(lambda d: d["code"], terms())):
+    if term_code in list(map(lambda d: d["code"], available_terms())):
         rsections = requests.get("https://web.stevens.edu/scheduler/core/core.php?cmd=getxml&term=" + term_code)
         if rsections.status_code == 200:
             data = xml.parse(rsections.text)["Semester"]
@@ -159,22 +159,58 @@ def semester(term_code):
             raise Exception("Request returned invalid status code " + rsections.status_code + ".")
     else:
         raise ValueError("The provided term code was invalid. \nExpected one of the following:" +
-                         ", ".join(list(map(lambda d: d["code"], terms()))) + "\nReceived: " + term_code)
+                         ", ".join(list(map(lambda d: d["code"], available_terms()))) + "\nReceived: " + term_code)
 
-def course(course_name, term):
+def course_sections(term, course_name):
     """
     Retreives all sections related to a specific course from a term.
     :param course_name: String representing the name of the course (i.e. "CS 115")
-    :param term: Either a term object (list of maps representing sections in a term) or a string representing a term-code.
-    :return: All courses representing
+    :param term: Either a semester object (list of maps representing sections in a semeseter) or a string representing a term-code.
+    :return: All sections in the semester relating to the course.
     """
     if type(term) is list:
         return list(filter(lambda section: course_name in section["section"], term["sections"]))
     if type(term) is str:
         return list(filter(lambda section: course_name in section["section"], semester(term)["sections"]))
 
+def section_corequisite_combinations(term, section):
+	"""
+	Returns a list containing every possible way a section's corequisites can be satisfied, excluding the activity corequisites.
+	An individual combination should only contain section call codes, rather than full objects.
+	:param term:
+	:param section:
+	:return:
+	"""
+	# For section corequisites (like freshman quiz, 2nd half semester MA courses, etc.), it should just be a simple search for the section title.
+	#   After, these sections should be checked for requirements, too.
+
+	# - Satisfy Activities coreqs
+	# - Satisfy Section coreqs
+	# - Satisfy Course coreqs
+	# - Filter duplicates
+
+	# To satisfy activity coreqs:
+	#   Search for sections related to the course this section is in (MA 121 for MA 121A) that have the satisfy coreqs.
+	#   Make sure that these new sections's coreqs are satisfied and that there are no conflicts
+
+	# To satisfy section coreqs:
+	#   Add section, and then ensure that that new section's coreqs are satisfied.
+	#   If section's coreqs aren't satisfied, find combinations that satisfy them. (Recurse back into section_corequisite_combinations maybe?)
+	pass # TODO
+
+def course_combinations(term, course_names):
+	"""
+	Returns a list of all possible ways multiple specified courses can be taken together given that all of their requirements are collectively satisfied.
+	:param term:
+	:param names:
+	:return:
+	"""
+	# this is likely gonna be closest to the main function
+	# possibly just make a ton of section_requisite satisfaction functions and map them onto the thing?
+	pass # TODO
+
 def test():
     with open("data/2019F.xml", "r") as f:
         myxml = list(map(lambda d: __clean__(d), xml.parse(f.read())["Semester"]["Course"]))
         f.close()
-    return course("CS 115", "2019F")
+    return course_sections("2019F", "MA 121")
