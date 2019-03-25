@@ -60,40 +60,40 @@ def __clean_requirements__(requirement):
     Helper function used in __clean__, handles `@Requirement` key.
     """
     # TODO: change into weird ass lambda switch statement
-    control_codes = {
-        "(BLANK)": "",
-        "CC": "Course corequisite required",
-        "CS": "Section corequisite required",
-        "CA": "Activity corequisite required",
-        "RQ": "Prerequisite course required",
-        "R&": "(cont.) Prerequisite course reqd",
-        "RQM": "Prereq course reqd w/ min grade",
-        "RM&": "(cont.) Prereq reqd w/ min grade",
-        "RQT": "Prerequisite test required",
-        "RT&": "(cont.) Prerequisite test required",
-        "NQ": "Concurrent Prereq course required",
-        "N&": "(cont.) Concur Prereq course reqd",
-        "NQM": "Concur Prereq reqd w/ min grade",
-        "NM&": "(cont.) Concur Prereq w/ min grade",
-        "MB": "By Application Only",
-        "MP": "Prerequisite Required",
-        "MC": "Corequisite Required",
-        "ML": "Lab Fee Required",
-        "MA": "Permission of Advisor Required",
-        "MI": "Permission of Instructor Required",
-        "MH": "Department Head Approval Required",
-        "MN": "No Credit Course for Departmental Majors",
-        "MS": "Studio course; No general Humanities credit",
-        "MW": "Women Only",
-        "PAU": "Auditors need instructor permission",
-        "PCG": "Permission needed from Continuing ED",
-        "PDP": "Permission needed from department",
-        "PIN": "Permission needed from instructor",
-        "PUN": "Undergrads need instructor permission",
-        "PUA": "UGs need permission of Dean of UG Academics"
-    }
+    control_codes = lambda cc: "" if cc == "(BLANK)" \
+		else "Course corequisite required" if cc == "CC" \
+		else "Section corequisite required" if cc == "CS" \
+		else "Activity corequisite required" if cc == "CA" \
+		else "Prerequisite course required" if cc == "RQ" \
+		else "(cont.) Prerequisite course reqd" if cc == "R&" \
+		else "Prereq course reqd w/ min grade" if cc == "RQM" \
+		else "(cont.) Prereq reqd w/ min grade" if cc == "RM&" \
+		else "Prerequisite test required" if cc == "RQT" \
+		else "(cont.) Prerequisite test required" if cc == "RT&" \
+		else "Concurrent Prereq course required" if cc == "NQ" \
+		else "(cont.) Concur Prereq course reqd" if cc == "N&" \
+		else "Concur Prereq reqd w/ min grade" if cc == "NQM" \
+		else "(cont.) Concur Prereq w/ min grade" if cc == "NM&" \
+		else "By Application Only" if cc == "MB" \
+		else "Prerequisite Required" if cc == "MP" \
+		else "Corequisite Required" if cc == "MC" \
+		else "Lab Fee Required" if cc == "ML" \
+		else "Permission of Advisor Required" if cc == "MA" \
+		else "Permission of Instructor Required" if cc == "MI" \
+		else "Department Head Approval Required" if cc == "MH" \
+		else "No Credit Course for Departmental Majors" if cc == "MN" \
+		else "Studio course; No general Humanities credit" if cc == "MS"\
+		else "Women Only" if cc == "MW" \
+		else "Auditors need instructor permission" if cc == "PAU" \
+		else "Permission needed from Continuing ED" if cc == "PCG" \
+		else "Permission needed from department" if cc == "PDP" \
+		else "Permission needed from instructor" if cc == "PIN" \
+		else "Undergrads need instructor permission" if cc == "PUN" \
+		else "UGs need permission of Dean of UG Academics" if cc == "PUA" \
+		else "unknown"
+
     return {
-        "description": control_codes[requirement["@Control"]] + ": " + requirement["@Value1"]
+        "description": control_codes(requirement["@Control"]) + ": " + requirement["@Value1"]
             + (", " + requirement["@Value2"] if requirement["@Value2"] != "" else ""),
         "code_list": list(filter(lambda s: s != "",
             [requirement["@Control"], requirement["@Value1"], requirement["@Value2"]])),
@@ -175,6 +175,6 @@ def course(course_name, term):
 
 def test():
     with open("data/2019F.xml", "r") as f:
-        myxml = xml.parse(f.read())["Semester"]
+        myxml = list(map(lambda d: __clean__(d), xml.parse(f.read())["Semester"]["Course"]))
         f.close()
-    return list(map(lambda d: __clean__(d), myxml["Course"]))
+    return  list(filter(lambda sec: "CS 115" in sec["section"], myxml))
