@@ -148,12 +148,12 @@ def semester(term_code):
     :return:
     """
     if term_code in list(map(lambda d: d["code"], terms())):
-        rsections = requests.get("https://web.stevens.edu/scheduler/core/core.php?cmd=getxml&terms=" + term_code)
+        rsections = requests.get("https://web.stevens.edu/scheduler/core/core.php?cmd=getxml&term=" + term_code)
         if rsections.status_code == 200:
             data = xml.parse(rsections.text)["Semester"]
             return {
                 "semester": data["@Semester"], # semester code, like 2019F
-                "courses":  list(map(lambda d: __clean__(d), data["Course"]))
+                "sections":  list(map(lambda d: __clean__(d), data["Course"]))
             }
         else:
             raise Exception("Request returned invalid status code " + rsections.status_code + ".")
@@ -169,12 +169,12 @@ def course(course_name, term):
     :return: All courses representing
     """
     if type(term) is list:
-        return list(filter(lambda section: course_name in section["section"], term))
+        return list(filter(lambda section: course_name in section["section"], term["sections"]))
     if type(term) is str:
-        return list(filter(lambda section: course_name in section["section"], semester(term)))
+        return list(filter(lambda section: course_name in section["section"], semester(term)["sections"]))
 
 def test():
     with open("data/2019F.xml", "r") as f:
         myxml = list(map(lambda d: __clean__(d), xml.parse(f.read())["Semester"]["Course"]))
         f.close()
-    return  list(filter(lambda sec: "CS 115" in sec["section"], myxml))
+    return course("CS 115", "2019F")
