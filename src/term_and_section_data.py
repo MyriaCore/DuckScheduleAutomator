@@ -59,6 +59,7 @@ def __clean_requirements__(requirement):
     """
     Helper function used in __clean__, handles `@Requirement` key.
     """
+    # TODO: change into weird ass lambda switch statement
     control_codes = {
         "(BLANK)": "",
         "CC": "Course corequisite required",
@@ -117,8 +118,17 @@ def __clean_meeting__(meeting):
                 "F": "friday",
                 "TBA": "tba"
             }
+
+            weekdays = lambda d: \
+                        "monday" if d == "M" \
+                        else "tuesday" if d == "T" \
+                        else "wednesday" if d == "W" \
+                        else "thursday" if d == "R" \
+                        else "friday" if d == "F" \
+                        else "saturday" if d == "S" \
+                        else "unknown"
             if key == "@Day":
-                clean_meeting["day"] = [weekdays[day_code] for day_code in meeting[key]]
+                clean_meeting["day"] = [weekdays(day_code) for day_code in meeting[key]]
             if key == "@StartTime":
                 clean_meeting["time_span"] = (convert_time(meeting["@StartTime"]), convert_time(meeting["@EndTime"]))
 
@@ -139,7 +149,7 @@ def terms():
     else:
         raise Exception("Request returned invalid status code " + rterms.status_code + ".")
 
-def sections(term_code):
+def semester(term_code):
     """
     Returns a python dictionary representing the course sections available in a term.
     See docs/home.md for details about possible keys and values the dictionaries can have.
@@ -160,10 +170,20 @@ def sections(term_code):
         raise ValueError("The provided term code was invalid. \nExpected one of the following:" +
                          ", ".join(list(map(lambda d: d["code"], terms()))) + "\nReceived: " + term_code)
 
+def course(course_name, term):
+    """
+    Retreives all sections related to a specific course from a term.
+    :param course_name: String representing the name of the course (i.e. "CS 115")
+    :param term: Either a term object (list of maps representing sections in a term) or a string representing a term-code.
+    :return: All courses representing
+    """
+    if type(term) is list:
+        return list(filter(lambda section: course_name in section["section"], term))
+    if type(term) is str:
+        return list(filter(lambda section: course_name in section["section"], semester(term)))
+
 def test():
     with open("data/2019F.xml", "r") as f:
         myxml = xml.parse(f.read())["Semester"]
         f.close()
-    ex_class = dict(random.choice(list(filter(lambda x: "CS 284A" in x["@Section"], myxml["Course"]))))
-    return __clean__(ex_class)
-
+    return list(map(lambda d: __clean__(d), myxml["Course"]))
