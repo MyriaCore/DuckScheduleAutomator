@@ -110,15 +110,6 @@ def __clean_meeting__(meeting):
         if key not in unsafe_keys:
             clean_meeting[__clean_key__(key)] = deepcopy(meeting[key])
         else:
-            weekdays = {
-                "M": "monday",
-                "T": "tuesday",
-                "W": "wednesday",
-                "R": "thursday",
-                "F": "friday",
-                "TBA": "tba"
-            }
-
             weekdays = lambda d: \
                         "monday" if d == "M" \
                         else "tuesday" if d == "T" \
