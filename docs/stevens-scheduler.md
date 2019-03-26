@@ -41,6 +41,9 @@ web courses, with `/webevents.php` presumably being a backend for that. `/redire
 still need to be investigated, although it is known that `/calendar.php` seems to download an ics text file with an error message in it.
 `/core.php` and `/test.php` will be covered in their own sections.
 
+<!-- TODO: talk about the following link. It relates to `/calendar.php`!: -->
+<!-- webcal://www.stevens.edu/scheduler/core/calendar.php?2019F=10528,10523,10529,12215,10567,10577&format=3 -- >
+
 Aside from the folders for each term, there are a few other folders (`/debug terms`, `/designators`, `/export`, `/includes`, and `/php_cache`). 
 `/debug terms` seems to just have some text files in them with extra information, presumably used as a bandaid for debugging purposes.
 `/designators` has some text files that seem to have been used in the creation of the help website, but it also has a file 
