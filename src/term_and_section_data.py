@@ -4,7 +4,7 @@ import xmltodict as xml
 from src.date_util import convert_time, convert_date
 import re
 import random
-from kanren import run, eq, membero, var, conde, Relation, facts, fact
+from kanren import run, eq, membero, var, conde, Relation, facts, fact, Var
 import kanren as k
 from collections import OrderedDict
 
@@ -229,10 +229,12 @@ def dict_to_tups(dictionary):
 	if type(dictionary) is dict:
 		result = []
 		for key in list(dictionary.keys()):
+			if key == "day":
+				print(dictionary["day"])
 			result += [(key, dict_to_tups(dictionary[key]))] if type(dictionary) is dict \
 				else [(key, tuple(map(dict_to_tups, dictionary[key])))] if list \
 				else [key, dictionary[key]]
-		return result
+		return tuple(result)
 	elif type(dictionary) is list:
 		return tuple(map(dict_to_tups, dictionary))
 	else:
@@ -251,10 +253,10 @@ def test():
 		f.close()
 	test_course = course_sections("2019F", "MA 121")[0]
 	# course = dict_to_rel(test_course)
-
-	course = dict_to_tups({"test": "ahhh"})
-	print(course)
+	course = dict_to_tups(test_course)
 	rel = Relation()
 	facts(rel, *course)
 	x = var()
-	return run(1, x, (rel, "test", x))
+	y = var()
+	z = var()
+	return run(4, z, (rel, "meetings", x), (membero, y, x), (membero, ("day", z), y))
