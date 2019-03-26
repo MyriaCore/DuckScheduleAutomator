@@ -5,8 +5,8 @@ from src.date_util import convert_time, convert_date
 import re
 import random
 from kanren import run, eq, membero, var, conde, Relation, facts, fact
+import kanren as k
 from collections import OrderedDict
-
 
 def __clean_key__(key):
 	"""
@@ -147,7 +147,6 @@ def available_terms():
 	else:
 		raise Exception("Request returned invalid status code " + rterms.status_code + ".")
 
-
 def semester(term_code):
 	"""
 	Returns a python dictionary representing the course sections available in a semester.
@@ -221,29 +220,21 @@ def course_combinations(term, course_names):
 	pass  # TODO
 
 
-def dict_to_rel(dictionary):
+def dict_to_tups(dictionary):
 	"""
 	Quick and dirty helper function to turn a python dictionary into a kanren Relation.
 	:param dictionary:
 	:return:
 	"""
 	if type(dictionary) is dict:
-		rel = Relation()
+		result = []
 		for key in list(dictionary.keys()):
-			if type(dictionary[key]) is not dict and type(dictionary[key] is not list) and type(
-					dictionary[key] is not tuple):
-				fact(rel, (key, dictionary[key]))
-			elif type(dictionary[key]) is dict:
-				fact(rel, (key, dict_to_rel(dictionary[key])))
-			elif type(dictionary[key]) is list:
-				fact(rel, (key, list(map(dict_to_rel, dictionary[key]))))
-			elif type(dictionary[key]) is tuple:
-				fact(rel, (key, tuple(map(dict_to_rel, dictionary[key]))))
-		return rel
+			result += [(key, dict_to_tups(dictionary[key]))] if type(dictionary) is dict \
+				else [(key, tuple(map(dict_to_tups, dictionary[key])))] if list \
+				else [key, dictionary[key]]
+		return result
 	elif type(dictionary) is list:
-		return list(map(dict_to_rel, dictionary))
-	elif type(dictionary) is tuple:
-		return tuple(map(dict_to_rel, dictionary))
+		return tuple(map(dict_to_tups, dictionary))
 	else:
 		return dictionary
 
@@ -259,6 +250,11 @@ def test():
 		myxml = list(map(lambda d: __clean__(d), xml.parse(f.read())["Semester"]["Course"]))
 		f.close()
 	test_course = course_sections("2019F", "MA 121")[0]
-	course = dict_to_rel(test_course)
+	# course = dict_to_rel(test_course)
+
+	course = dict_to_tups({"test": "ahhh"})
+	print(course)
+	rel = Relation()
+	facts(rel, *course)
 	x = var()
-	return run(1, x, course(eq()))
+	return run(1, x, (rel, "test", x))
