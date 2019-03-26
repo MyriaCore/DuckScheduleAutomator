@@ -226,6 +226,7 @@ def dict_to_tups(dictionary):
 	:param dictionary:
 	:return:
 	"""
+	# TODO: figure out why room codes dont seem to be there for MA 121A
 	if type(dictionary) is dict:
 		result = []
 		for key in list(dictionary.keys()):
