@@ -3,7 +3,7 @@ from copy import deepcopy
 import xmltodict as xml
 from src.date_util import convert_time, convert_date
 import re
-import random
+import datetime
 from kanren import run, eq, membero, var, conde, Relation, facts, fact, Var
 from collections import OrderedDict
 
@@ -144,7 +144,7 @@ def available_terms():
 		return list(
 			map(lambda d: {"code": d["@Code"], "description": d["@Name"]}, xml.parse(rterms.text)["Terms"]["Term"]))
 	else:
-		raise Exception("Request returned invalid status code " + rterms.status_code + ".")
+		raise Exception("Request returned invalid status code " + str(rterms.status_code) + ".")
 
 def semester(term_code):
 	"""
@@ -162,7 +162,7 @@ def semester(term_code):
 				"sections": tuple(map(lambda d: __clean__(d), data["Course"]))
 			}
 		else:
-			raise Exception("Request returned invalid status code " + rsections.status_code + ".")
+			raise Exception("Request returned invalid status code " + str(rsections.status_code) + ".")
 	else:
 		raise ValueError("The provided term code was invalid. \nExpected one of the following:" +
 						 ", ".join(list(map(lambda d: d["code"], available_terms()))) + "\nReceived: " + term_code)
@@ -176,6 +176,8 @@ def course_sections(term, course_name):
 	:return: All sections in the semester relating to the course.
 	"""
 	if type(term) is list:
+		return list(filter(lambda section: course_name in section["section"], term))
+	if type(term) is dict:
 		return list(filter(lambda section: course_name in section["section"], term["sections"]))
 	if type(term) is str:
 		return list(filter(lambda section: course_name in section["section"], semester(term)["sections"]))
@@ -219,30 +221,47 @@ def course_combinations(term, course_names):
 	pass  # TODO
 
 
-def dict_to_tups(dictionary):
+def coll_to_tups(coll):
 	"""
-	Quick and dirty helper function to turn a python dictionary into a kanren Relation.
-	:param dictionary:
+	Quick and dirty helper function to turn a python collection into organized tuples.
+	:param coll:
 	:return:
 	"""
-	if type(dictionary) is dict:
+	if type(coll) is dict:
 		result = []
-		for key in list(dictionary.keys()):
-			result += [(key, dict_to_tups(dictionary[key]))] if type(dictionary) is dict \
-				else [(key, tuple(map(dict_to_tups, dictionary[key])))] if list \
-				else [key, dictionary[key]]
+		for key in list(coll.keys()):
+			result += [(key, coll_to_tups(coll[key]))] if type(coll) is dict \
+				else [(key, tuple(map(coll_to_tups, coll[key])))] if list \
+				else [key, coll[key]]
 		return tuple(result)
-	elif type(dictionary) is list:
-		return tuple(map(dict_to_tups, dictionary))
+	elif type(coll) is list:
+		return tuple(map(coll_to_tups, coll))
 	else:
-		return dictionary
+		return coll
+
+def tups_to_coll(tups):
+	"""
+	Quick and Dirty helper function to turn an organized tuple of other tuples (as given by `coll_to_tups`) back into
+	whatever data type it previously was.
+	:param tups:
+	:return:
+	"""
+	if type(tups) is tuple:
+		# Very likely that it was a map
+		if len(tups) == 2:
+			pass # TODO: Write a check to see if it's really a map
+		elif len(tups) > 2 or len(tups) < 2: # Very likely that is was a list
+			pass # TODO
+		pass # TODO
+	else:
+		return tups
 
 def ex_relation_queries():
 	"""
 	A function to provide example kanren queries in the context of the stevens xml data.
 	Not meant to be used in legitimate production, more just a test-bed for relational functions.
 	"""
-	test_course = dict_to_tups(course_sections("2019F", "MA 121"))
+	test_course = coll_to_tups(course_sections("2019F", "MA 121"))
 
 	# Query: Which sections in test_course have section corequisite requirements?
 	section, sections, requirement, requirements, section_requirement = var(), var(), var(), var(), var()
@@ -272,15 +291,41 @@ def ex_relation_queries():
 	# Query: "Which sections satisfy an activity co-requisite?
 	pass # TODO
 
-	def test():
-		# parent = Relation()
-		# facts(parent, ("Homer", "Bart"), ("Homer", "Lisa"), ("Abe", "Homer"))
-		# facts(parent, ["Marcus", {"name": "God"}])
-		# x = var()
-		# return run(1, x, parent("Marcus", x))
+def test():
+	# parent = Relation()
+	# facts(parent, ("Homer", "Bart"), ("Homer", "Lisa"), ("Abe", "Homer"))
+	# facts(parent, ["Marcus", {"name": "God"}])
+	# x = var()
+	# return run(1, x, parent("Marcus", x))
 
-		with open("data/2019F.xml", "r") as f:
-			myxml = list(map(lambda d: __clean__(d), xml.parse(f.read())["Semester"]["Course"]))
-			f.close()
-		rel_course = Relation()
-		facts(rel_course, *test_course)
+	with open("data/2019F.xml", "r") as f:
+		sem = {"sections": list(map(lambda d: __clean__(d), xml.parse(f.read())["Semester"]["Course"])), "code": "2019F"}
+		f.close()
+
+	# The below block of code is an attempt to sketch out what a function might look like if it were trying to
+	# retrieve all sections that satisfy an activity corequisite
+
+	# MA 121A from 2019F
+	test_section = {'section': 'MA 121A', 'title': 'Differential Calculus', 'call_number': '11160', 'min_credit': 2, 'max_credit': 4, 'max_enrollment': 45, 'current_enrollment': 0, 'status': 'open', 'date_span': (datetime.date(2019, 8, 26), datetime.date(2019, 12, 20)), 'instructor_1': 'Staff A', 'term': '2019F', 'meetings': [{'day': ['monday', 'wednesday', 'friday'], 'time_span': (datetime.time(5, 0), datetime.time(5, 50)), 'site': 'Castle Point', 'building': '', 'room': '', 'activity': 'LEC'}], 'requirements': [{'description': 'Activity corequisite required: RCT', 'code_list': ['CA', 'RCT']}, {'description': 'Section corequisite required: D   110A', 'code_list': ['CS', 'D   110A']}, {'description': 'Section corequisite required: MA  122AA', 'code_list': ['CS', 'MA  122AA']}]}
+
+	for req in test_section["requirements"]:
+		if "CA" in req["code_list"]:
+			# the course name from the section name ("MA 123A => MA 123")
+			course_name = " ".join(re.findall("([A-Z]{2,3})\s+([0-9]{3})([A-Z]{1,2})?", test_section["section"])[0][0:2])
+			# TODO: In the line below, replace sem -> test_section["term"] to automate getting the right term obj
+			course = coll_to_tups(course_sections(sem, course_name))
+
+			# Query: "Which sections in test_course are lectures?"
+			section, sections, requirement, requirements, section_requirement, meeting, meetings = var(), var(), var(), var(), var(), var(), var()
+			result = run(0, section, (eq, sections, tuple([var() for thing in course])), (eq, sections, course),
+							(membero, section, sections),  							# There is a section in sections
+							(membero, ("meetings", meetings), section),  			# That has meetings
+							(membero, meeting, meetings),  							# that has a meeting
+							(membero, ("activity", req["code_list"][1]), meeting))  # That is the co-required activity.
+
+			# The commented out line below will crash until `tups_to_coll` is implemented
+			# return tups_to_coll(result)
+			return result
+	# Splits up a Section name into Subject, Course, and Section.
+	re.findall("([A-Z]{2,3})\s+([0-9]{3})([A-Z]{1,2})?", "MA 123RC")
+	# => [("MA", "123", "RC")]
