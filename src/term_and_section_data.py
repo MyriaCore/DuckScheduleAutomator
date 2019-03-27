@@ -238,6 +238,12 @@ def dict_to_tups(dictionary):
 		return dictionary
 
 def ex_relation_queries():
+	"""
+	A function to provide example kanren queries in the context of the stevens xml data.
+	Not meant to be used in legitimate production, more just a test-bed for relational functions.
+	"""
+	test_course = dict_to_tups(course_sections("2019F", "MA 121"))
+
 	# Query: Which sections in test_course have section corequisite requirements?
 	section, sections, requirement, requirements, section_requirement = var(), var(), var(), var(), var()
 	run(0, section, (eq, sections, tuple([var() for thing in test_course])), (eq, sections, test_course),
@@ -276,6 +282,5 @@ def ex_relation_queries():
 		with open("data/2019F.xml", "r") as f:
 			myxml = list(map(lambda d: __clean__(d), xml.parse(f.read())["Semester"]["Course"]))
 			f.close()
-		test_course = dict_to_tups(course_sections("2019F", "MA 121"))
 		rel_course = Relation()
 		facts(rel_course, *test_course)
