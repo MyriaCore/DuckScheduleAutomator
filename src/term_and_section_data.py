@@ -5,7 +5,6 @@ from src.date_util import convert_time, convert_date
 import re
 import random
 from kanren import run, eq, membero, var, conde, Relation, facts, fact, Var
-import kanren as k
 from collections import OrderedDict
 
 def __clean_key__(key):
@@ -229,8 +228,6 @@ def dict_to_tups(dictionary):
 	if type(dictionary) is dict:
 		result = []
 		for key in list(dictionary.keys()):
-			if key == "day":
-				print(dictionary["day"])
 			result += [(key, dict_to_tups(dictionary[key]))] if type(dictionary) is dict \
 				else [(key, tuple(map(dict_to_tups, dictionary[key])))] if list \
 				else [key, dictionary[key]]
@@ -240,23 +237,45 @@ def dict_to_tups(dictionary):
 	else:
 		return dictionary
 
+def ex_relation_queries():
+	# Query: Which sections in test_course have section corequisite requirements?
+	section, sections, requirement, requirements, section_requirement = var(), var(), var(), var(), var()
+	run(0, section, (eq, sections, tuple([var() for thing in test_course])), (eq, sections, test_course),
+		(membero, section, sections),  										# There is a section in sections
+		(membero, ("requirements", requirements), section),  				# that has requirements
+		(membero, requirement, requirements),  								# which has a requirement
+		(membero, ("code_list", ("CS", section_requirement)), requirement)) # that is a class requirement requirement
 
-def test():
-	# parent = Relation()
-	# facts(parent, ("Homer", "Bart"), ("Homer", "Lisa"), ("Abe", "Homer"))
-	# facts(parent, ["Marcus", {"name": "God"}])
-	# x = var()
-	# return run(1, x, parent("Marcus", x))
+	# Query: "Which sections in test_course are lectures?"
+	meeting, meetings = var(), var()
+	run(0, section, (eq, sections, tuple([var() for thing in test_course])), (eq, sections, test_course),
+		(membero, section, sections),  					# There is a section in sections
+		(membero, ("meetings", meetings), section),  	# That has meetings
+		(membero, meeting, meetings),  					# that has a meeting
+		(membero, ("activity", "LEC"), meeting))  		# that is a lecture.
 
-	with open("data/2019F.xml", "r") as f:
-		myxml = list(map(lambda d: __clean__(d), xml.parse(f.read())["Semester"]["Course"]))
-		f.close()
-	test_course = course_sections("2019F", "MA 121")[0]
-	# course = dict_to_rel(test_course)
-	course = dict_to_tups(test_course)
-	rel = Relation()
-	facts(rel, *course)
-	x = var()
-	y = var()
-	z = var()
-	return run(4, z, (rel, "meetings", x), (membero, y, x), (membero, ("day", z), y))
+	# Query: "Which lectures sections in test_course are open?"
+	meeting, meetings = var(), var()
+	run(0, section, (eq, sections, tuple([var() for thing in test_course])), (eq, sections, test_course),
+		(membero, section, sections),  					# There is a section in sections
+		(membero, ("status", "open"), section), 		# That is open
+		(membero, ("meetings", meetings), section), 	# That has meetings
+		(membero, meeting, meetings),  					# that has a meeting
+		(membero, ("activity", "LEC"), meeting))  		# that is a lecture.
+
+	# Query: "Which sections satisfy an activity co-requisite?
+	pass # TODO
+
+	def test():
+		# parent = Relation()
+		# facts(parent, ("Homer", "Bart"), ("Homer", "Lisa"), ("Abe", "Homer"))
+		# facts(parent, ["Marcus", {"name": "God"}])
+		# x = var()
+		# return run(1, x, parent("Marcus", x))
+
+		with open("data/2019F.xml", "r") as f:
+			myxml = list(map(lambda d: __clean__(d), xml.parse(f.read())["Semester"]["Course"]))
+			f.close()
+		test_course = dict_to_tups(course_sections("2019F", "MA 121"))
+		rel_course = Relation()
+		facts(rel_course, *test_course)
