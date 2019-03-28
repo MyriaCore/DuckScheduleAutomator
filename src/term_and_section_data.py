@@ -288,7 +288,6 @@ def coreq_options(section, term=None):
 		by `section["term"]`.
 	:return: Python dictionary used to describe the options that can satisfy the section's co-requisites.
 	"""
-	# TODO: test
 	# Set term if not provided
 	if not term: term = semester(section["term"])
 	result = {}
@@ -301,14 +300,14 @@ def coreq_options(section, term=None):
 			course = coll_to_tups(course_sections(term, course_name))
 			activity_type = req["code_list"][1]
 			# Query: "Which sections satisfy a `section`'s co-requisite?"
-			v_section, v_sections, v_requirement, v_requirements, v_section_requirement, v_meeting, v_meetings, v_call_number \
+			v_section, v_course, v_requirement, v_requirements, v_section_requirement, v_meeting, v_meetings, v_call_number \
 				= var(), var(), var(), var(), var(), var(), var(), var()
-			kanren_result = run(0, v_section, (eq, v_sections, tuple([var() for _ in course])), (eq, v_sections, course),
-						(membero, v_section, v_sections),  							# There is a section `vsection` in `v_sections`
-						(membero, ("call_number", v_call_number), v_section),		# That has a callnumber `v_call_number`
+			kanren_result = run(0, v_section, (eq, v_course, tuple([var() for thing in course])), (eq, v_course, course),
+						(membero, v_section, v_course),  							# There is a section `vsection` in `v_course`
+						(membero, ("call_number", v_call_number), v_section),		# That has a call number `v_call_number`
 						(membero, ("meetings", v_meetings), v_section),  			# and has a list of meetings `v_meetings`
 						(membero, v_meeting, v_meetings),  							# which has some meeting `v_meeting`
-						(membero, ("activity", ), v_meeting))  	# That is the co-required activity.
+						(membero, ("activity", activity_type), v_meeting))  		# That is the co-required activity.
 			if "activity" not in result.keys():
 				result["activity"] = [{
 					"type": activity_type,
@@ -322,8 +321,8 @@ def coreq_options(section, term=None):
 		# Section Co-Requisite
 		if "CS" in req["code_list"]:
 			# Clean up section coreq name to make it searchable
-			parsed_section_coreq_name = re.findall("([A-Z]{2,3})\s+([0-9]{3})([A-Z]{1,2})?", req["code_list"][1])[0]
-			section_coreq_name = " ".join(parsed_section_coreq_name[0:2]) + parsed_section_coreq_name[3]
+			parsed_section_coreq_name = re.findall("([A-Z]{1,3})\s+([0-9]{3})([A-Z]{1,2})?", req["code_list"][1])[0]
+			section_coreq_name = " ".join(parsed_section_coreq_name[0:2]) + parsed_section_coreq_name[2]
 
 			section_coreq = [s for s in term["sections"] if s["section"] == section_coreq_name][0]
 			if "section" not in result.keys():
@@ -334,6 +333,7 @@ def coreq_options(section, term=None):
 		if "CC" in req["code_list"]:
 			# [s for s in term["sections"] if "requirements" in s.keys() and ["MC" in r["code_list"] for r in s["requirements"]]]
 			pass # TODO
+	return result
 
 
 def course_combinations(term, course_names):
@@ -361,8 +361,8 @@ def test():
 	section = {'section': 'MA 121A', 'title': 'Differential Calculus', 'call_number': '11160', 'min_credit': 2, 'max_credit': 4, 'max_enrollment': 45, 'current_enrollment': 0, 'status': 'open', 'date_span': (datetime.date(2019, 8, 26), datetime.date(2019, 12, 20)), 'instructor_1': 'Staff A', 'term': '2019F', 'meetings': [{'day': ['monday', 'wednesday', 'friday'], 'time_span': (datetime.time(5, 0), datetime.time(5, 50)), 'site': 'Castle Point', 'building': '', 'room': '', 'activity': 'LEC'}], 'requirements': [{'description': 'Activity corequisite required: RCT', 'code_list': ['CA', 'RCT']}, {'description': 'Section corequisite required: D   110A', 'code_list': ['CS', 'D   110A']}, {'description': 'Section corequisite required: MA  122AA', 'code_list': ['CS', 'MA  122AA']}]}
 
 	# Gets a list of tuples containing the term and the call number of courses that satisfy section's coreq requirements
-	list(map(lambda s: (s["term"], s["call_number"]), section_coreq_combinations(section)))
+	list(map(lambda s: (s["term"], s["call_number"]), coreq_options(section)))
 
 	# Splits up a Section name into Subject, Course, and Section.
-	re.findall("([A-Z]{2,3})\s+([0-9]{3})([A-Z]{1,2})?", "MA 123RC")
+	re.findall("([A-Z]{1,3})\s+([0-9]{3})([A-Z]{1,2})?", "MA 123RC")
 	# => [("MA", "123", "RC")]

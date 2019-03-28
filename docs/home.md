@@ -107,6 +107,6 @@ Below is a table describing the keys you will likely encounter.
 
 | Key | Description |
 |---|---|
-| `activity` | A list of python dictionaries that represent activity co-requisite options. There are only two keys: `type` and `sections`, which refer to the type of activity (i.e. `"LEC"`, `"RCT"`, etc.), and the list of section dictionaries to choose from respectively. |
-| `section` | A list of section dictionaries. Be advised that all elements in this list must be present to satisfy this requirement, unlike the elements found in the `activity`.  |
+| `activity` | A list of python dictionaries that represent activity co-requisite options. There are only two keys: `type` and `sections`, which refer to the type of activity (i.e. `"LEC"`, `"RCT"`, etc.), and the list of section dictionaries to choose from respectively. *Keep in mind that the user must choose one section from **each** dictionary provided by this key to satisfy requirements.* |
+| `section` | A list of section dictionaries. *Keep in mind that **each** section provided by this key must be present to satisfy requirements.* |
 | `course` | (*NOT YET IMPLEMENTED!*) |
