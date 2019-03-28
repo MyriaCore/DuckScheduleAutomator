@@ -3,6 +3,7 @@ from copy import deepcopy
 import xmltodict as xml
 from src.date_util import convert_time, convert_date
 import re
+from functools import reduce
 import datetime
 from kanren import run, eq, membero, var, conde, Relation, facts, fact, Var
 from collections import OrderedDict
@@ -223,36 +224,43 @@ def course_combinations(term, course_names):
 
 def coll_to_tups(coll):
 	"""
-	Quick and dirty helper function to turn a python collection into organized tuples.
-	:param coll:
-	:return:
+	Quick and dirty helper function to turn a python collection into organized tuples. Used in kanren, because lists
+	and dictionaries aren't hashable.
+	:param coll: A standard python collection (lists, dicts, etc.). Assumes everything other than lists and dicts are
+		simply values, and leaves them be.
+	:return: The same coll, but made up of completely tuples. If given a dictionary, will return a tuple of the form:
+		((key1, val1), (key2, val2), ..., (keyn, valn))
 	"""
-	if type(coll) is dict:
-		result = []
-		for key in list(coll.keys()):
-			result += [(key, coll_to_tups(coll[key]))] if type(coll) is dict \
-				else [(key, tuple(map(coll_to_tups, coll[key])))] if list \
-				else [key, coll[key]]
-		return tuple(result)
-	elif type(coll) is list:
-		return tuple(map(coll_to_tups, coll))
-	else:
-		return coll
+	return tuple([(k, coll_to_tups(v)) for (k, v) in list(coll.items())]) if type(coll) is dict \
+		else tuple(map(coll_to_tups, coll)) if type(coll) is list \
+		else coll
 
 def tups_to_coll(tups):
 	"""
 	Quick and Dirty helper function to turn an organized tuple of other tuples (as given by `coll_to_tups`) back into
-	whatever data type it previously was.
-	:param tups:
-	:return:
+	whatever data type it previously was. Used to revert data structures used in kanren back to their original form.
+	:param tups: a collection comprised of only tuples, meant to emulate possibly nested dictionaries and lists
+	:return: the original python collection, whether it was a list, a dictionary, etc. Recursively performs this operation
+		on all of the tups's children until it is made up of completely lists and dictionaries.
 	"""
 	if type(tups) is tuple:
-		# Very likely that it was a map
-		if len(tups) == 2:
-			pass # TODO: Write a check to see if it's really a map
-		elif len(tups) > 2 or len(tups) < 2: # Very likely that is was a list
-			pass # TODO
-		pass # TODO
+		# to keep track of control codes, a possible edge case for checking maps
+		control_codes = ['(BLANK)', 'CC', 'CS', 'CA', 'RQ', 'R&', 'RQM', 'RM&', 'RQT', 'RT&', 'NQ', 'N&', 'NQM', 'NM&',
+						 'MB', 'MP', 'MC', 'ML', 'MA', 'MI', 'MH', 'MN', 'MS', 'MW', 'PAU', 'PCG', 'PDP', 'PIN', 'PUN',
+						 'PUA']
+		# tups only has other tuples in it
+		only_tups = reduce(lambda a, b: a and b, list(map(lambda thing: type(thing) is tuple, tups)))
+		# tups only has tuples of length two in it
+		all_have_two = reduce(lambda a, b: a and b, list(map(lambda tup: len(tup) == 2, tups))) if only_tups else False
+		# all tuples inside of tups have strings as the first element (i.e. they are keys)
+		all_have_keys = reduce(lambda a, b: a and b, list(map(lambda tup: type(tup[0]) is str, tups))) if only_tups else False
+
+		# tups was a map
+		if only_tups and all_have_two and all_have_keys:
+			return {k: tups_to_coll(v) for (k, v) in tups}
+		# tups was a list
+		else:
+			return list(map(tups_to_coll, tups))
 	else:
 		return tups
 
@@ -288,8 +296,27 @@ def ex_relation_queries():
 		(membero, meeting, meetings),  					# that has a meeting
 		(membero, ("activity", "LEC"), meeting))  		# that is a lecture.
 
-	# Query: "Which sections satisfy an activity co-requisite?
-	pass # TODO
+	# Query: "Which sections satisfy an activity co-requisite?"
+	# MA 121A from 2019F is the section we're using to test here.
+	test_section = {'section': 'MA 121A', 'title': 'Differential Calculus', 'call_number': '11160', 'min_credit': 2, 'max_credit': 4, 'max_enrollment': 45, 'current_enrollment': 0, 'status': 'open', 'date_span': (datetime.date(2019, 8, 26), datetime.date(2019, 12, 20)), 'instructor_1': 'Staff A', 'term': '2019F', 'meetings': [{'day': ['monday', 'wednesday', 'friday'], 'time_span': (datetime.time(5, 0), datetime.time(5, 50)), 'site': 'Castle Point', 'building': '', 'room': '', 'activity': 'LEC'}], 'requirements': [{'description': 'Activity corequisite required: RCT', 'code_list': ['CA', 'RCT']}, {'description': 'Section corequisite required: D   110A', 'code_list': ['CS', 'D   110A']}, {'description': 'Section corequisite required: MA  122AA', 'code_list': ['CS', 'MA  122AA']}]}
+
+	for req in test_section["requirements"]:
+		if "CA" in req["code_list"]:
+			# gets the course name from the section name ("MA 123A => MA 123")
+			course_name = " ".join(re.findall("([A-Z]{2,3})\s+([0-9]{3})([A-Z]{1,2})?", test_section["section"])[0][0:2])
+			course = coll_to_tups(course_sections(test_section["term"], course_name))
+
+			# Query: "Which sections in this term satisfy MA 121A's activity-corequisite requirement?
+			section, sections, requirement, requirements, section_requirement, meeting, meetings = var(), var(), var(), var(), var(), var(), var()
+			result = run(0, section, (eq, sections, tuple([var() for thing in course])), (eq, sections, course),
+							(membero, section, sections),  							# There is a section in sections
+							(membero, ("meetings", meetings), section),  			# That has meetings
+							(membero, meeting, meetings),  							# that has a meeting
+							(membero, ("activity", req["code_list"][1]), meeting))  # That is the co-required activity.
+
+			# The commented out line below will crash until `tups_to_coll` is implemented
+			# return tups_to_coll(result)
+			return result
 
 def test():
 	# parent = Relation()
@@ -305,27 +332,7 @@ def test():
 	# The below block of code is an attempt to sketch out what a function might look like if it were trying to
 	# retrieve all sections that satisfy an activity corequisite
 
-	# MA 121A from 2019F
-	test_section = {'section': 'MA 121A', 'title': 'Differential Calculus', 'call_number': '11160', 'min_credit': 2, 'max_credit': 4, 'max_enrollment': 45, 'current_enrollment': 0, 'status': 'open', 'date_span': (datetime.date(2019, 8, 26), datetime.date(2019, 12, 20)), 'instructor_1': 'Staff A', 'term': '2019F', 'meetings': [{'day': ['monday', 'wednesday', 'friday'], 'time_span': (datetime.time(5, 0), datetime.time(5, 50)), 'site': 'Castle Point', 'building': '', 'room': '', 'activity': 'LEC'}], 'requirements': [{'description': 'Activity corequisite required: RCT', 'code_list': ['CA', 'RCT']}, {'description': 'Section corequisite required: D   110A', 'code_list': ['CS', 'D   110A']}, {'description': 'Section corequisite required: MA  122AA', 'code_list': ['CS', 'MA  122AA']}]}
 
-	for req in test_section["requirements"]:
-		if "CA" in req["code_list"]:
-			# the course name from the section name ("MA 123A => MA 123")
-			course_name = " ".join(re.findall("([A-Z]{2,3})\s+([0-9]{3})([A-Z]{1,2})?", test_section["section"])[0][0:2])
-			# TODO: In the line below, replace sem -> test_section["term"] to automate getting the right term obj
-			course = coll_to_tups(course_sections(sem, course_name))
-
-			# Query: "Which sections in test_course are lectures?"
-			section, sections, requirement, requirements, section_requirement, meeting, meetings = var(), var(), var(), var(), var(), var(), var()
-			result = run(0, section, (eq, sections, tuple([var() for thing in course])), (eq, sections, course),
-							(membero, section, sections),  							# There is a section in sections
-							(membero, ("meetings", meetings), section),  			# That has meetings
-							(membero, meeting, meetings),  							# that has a meeting
-							(membero, ("activity", req["code_list"][1]), meeting))  # That is the co-required activity.
-
-			# The commented out line below will crash until `tups_to_coll` is implemented
-			# return tups_to_coll(result)
-			return result
 	# Splits up a Section name into Subject, Course, and Section.
 	re.findall("([A-Z]{2,3})\s+([0-9]{3})([A-Z]{1,2})?", "MA 123RC")
 	# => [("MA", "123", "RC")]
