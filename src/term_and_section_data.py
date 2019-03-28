@@ -183,45 +183,6 @@ def course_sections(term, course_name):
 	if type(term) is str:
 		return list(filter(lambda section: course_name in section["section"], semester(term)["sections"]))
 
-
-def section_corequisite_combinations(term, section):
-	"""
-	Returns a list containing every possible way a section's corequisites can be satisfied, excluding the activity corequisites.
-	An individual combination should only contain section call codes, rather than full objects.
-	:param term:
-	:param section:
-	:return:
-	"""
-	# For section corequisites (like freshman quiz, 2nd half semester MA courses, etc.), it should just be a simple search for the section title.
-	#   After, these sections should be checked for requirements, too.
-
-	# - Satisfy Activities coreqs
-	# - Satisfy Section coreqs
-	# - Satisfy Course coreqs
-	# - Filter duplicates
-
-	# To satisfy activity coreqs:
-	#   Search for sections related to the course this section is in (MA 121 for MA 121A) that have the satisfy coreqs.
-	#   Make sure that these new sections's coreqs are satisfied and that there are no conflicts
-
-	# To satisfy section coreqs:
-	#   Add section, and then ensure that that new section's coreqs are satisfied.
-	#   If section's coreqs aren't satisfied, find combinations that satisfy them. (Recurse back into section_corequisite_combinations maybe?)
-	pass  # TODO
-
-
-def course_combinations(term, course_names):
-	"""
-	Returns a list of all possible ways multiple specified courses can be taken together given that all of their requirements are collectively satisfied.
-	:param term:
-	:param names:
-	:return:
-	"""
-	# this is likely gonna be closest to the main function
-	# possibly just make a ton of section_requisite satisfaction functions and map them onto the thing?
-	pass  # TODO
-
-
 def coll_to_tups(coll):
 	"""
 	Quick and dirty helper function to turn a python collection into organized tuples. Used in kanren, because lists
@@ -317,6 +278,31 @@ def ex_relation_queries():
 			# The commented out line below will crash until `tups_to_coll` is implemented
 			# return tups_to_coll(result)
 			return result
+
+
+def section_corequisite_combinations(term, section):
+	"""
+	Returns a list containing every possible way a section's corequisites can be satisfied, excluding the activity corequisites.
+	An individual combination should only contain section call codes, rather than full objects.
+	:param term:
+	:param section:
+	:return:
+	"""
+
+	pass  # TODO
+
+
+def course_combinations(term, course_names):
+	"""
+	Returns a list of all possible ways multiple specified courses can be taken together given that all of their requirements are collectively satisfied.
+	:param term:
+	:param names:
+	:return:
+	"""
+	# this is likely gonna be closest to the main function
+	# possibly just make a ton of section_requisite satisfaction functions and map them onto the thing?
+	pass  # TODO
+
 
 def test():
 	# parent = Relation()
