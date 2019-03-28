@@ -8,14 +8,58 @@ import datetime
 from kanren import run, eq, membero, var, conde, Relation, facts, fact, Var
 from collections import OrderedDict
 
+
 def __clean_key__(key):
 	"""
-	Helper function used in clean
+	Private helper function used in clean
 	:param key: String, representing a key in a dictionary
 	:return: String, representing a cleaned key in a dictionary
 	"""
 	return str(re.sub("([a-z])([A-Z1-9])", lambda m: m.group(1) + "_" + str(m.group(2)).lower(),
-					  str(key).replace("@", ""))).lower()
+		str(key).replace("@", ""))).lower()
+
+
+def __clean_requirements__(requirement):
+	"""
+	Private helper function used in __clean__, handles `@Requirement` key.
+	"""
+	control_codes = lambda cc: "" if cc == "(BLANK)" \
+		else "Course corequisite required" if cc == "CC" \
+		else "Section corequisite required" if cc == "CS" \
+		else "Activity corequisite required" if cc == "CA" \
+		else "Prerequisite course required" if cc == "RQ" \
+		else "(cont.) Prerequisite course reqd" if cc == "R&" \
+		else "Prereq course reqd w/ min grade" if cc == "RQM" \
+		else "(cont.) Prereq reqd w/ min grade" if cc == "RM&" \
+		else "Prerequisite test required" if cc == "RQT" \
+		else "(cont.) Prerequisite test required" if cc == "RT&" \
+		else "Concurrent Prereq course required" if cc == "NQ" \
+		else "(cont.) Concur Prereq course reqd" if cc == "N&" \
+		else "Concur Prereq reqd w/ min grade" if cc == "NQM" \
+		else "(cont.) Concur Prereq w/ min grade" if cc == "NM&" \
+		else "By Application Only" if cc == "MB" \
+		else "Prerequisite Required" if cc == "MP" \
+		else "Corequisite Required" if cc == "MC" \
+		else "Lab Fee Required" if cc == "ML" \
+		else "Permission of Advisor Required" if cc == "MA" \
+		else "Permission of Instructor Required" if cc == "MI" \
+		else "Department Head Approval Required" if cc == "MH" \
+		else "No Credit Course for Departmental Majors" if cc == "MN" \
+		else "Studio course; No general Humanities credit" if cc == "MS" \
+		else "Women Only" if cc == "MW" \
+		else "Auditors need instructor permission" if cc == "PAU" \
+		else "Permission needed from Continuing ED" if cc == "PCG" \
+		else "Permission needed from department" if cc == "PDP" \
+		else "Permission needed from instructor" if cc == "PIN" \
+		else "Undergrads need instructor permission" if cc == "PUN" \
+		else "UGs need permission of Dean of UG Academics" if cc == "PUA" \
+		else "unknown"
+	return {
+		"description": control_codes(requirement["@Control"]) + ": " + requirement["@Value1"]
+			+ (", " + requirement["@Value2"] if requirement["@Value2"] != "" else ""),
+		"code_list": list(filter(lambda s: s != "",
+			[requirement["@Control"], requirement["@Value1"], requirement["@Value2"]])),
+	}
 
 
 def __clean__(section):
@@ -24,7 +68,7 @@ def __clean__(section):
 	makes sure the data types, structures, etc described by the raw dictionary are correct and properly pythonic.
 	"""
 	unsafe_keys = ["Requirement", "@StartDate", "@EndDate", "@Status", "@CurrentEnrollment", "@MaxEnrollment",
-				   "@MinCredit", "@MaxCredit", "Meeting"]
+		"@MinCredit", "@MaxCredit", "Meeting"]
 	clean_section = {}
 
 	for key in list(section.keys()):
@@ -61,49 +105,6 @@ def __clean__(section):
 	return clean_section
 
 
-def __clean_requirements__(requirement):
-	"""
-	Helper function used in __clean__, handles `@Requirement` key.
-	"""
-	control_codes = lambda cc: "" if cc == "(BLANK)" \
-		else "Course corequisite required" if cc == "CC" \
-		else "Section corequisite required" if cc == "CS" \
-		else "Activity corequisite required" if cc == "CA" \
-		else "Prerequisite course required" if cc == "RQ" \
-		else "(cont.) Prerequisite course reqd" if cc == "R&" \
-		else "Prereq course reqd w/ min grade" if cc == "RQM" \
-		else "(cont.) Prereq reqd w/ min grade" if cc == "RM&" \
-		else "Prerequisite test required" if cc == "RQT" \
-		else "(cont.) Prerequisite test required" if cc == "RT&" \
-		else "Concurrent Prereq course required" if cc == "NQ" \
-		else "(cont.) Concur Prereq course reqd" if cc == "N&" \
-		else "Concur Prereq reqd w/ min grade" if cc == "NQM" \
-		else "(cont.) Concur Prereq w/ min grade" if cc == "NM&" \
-		else "By Application Only" if cc == "MB" \
-		else "Prerequisite Required" if cc == "MP" \
-		else "Corequisite Required" if cc == "MC" \
-		else "Lab Fee Required" if cc == "ML" \
-		else "Permission of Advisor Required" if cc == "MA" \
-		else "Permission of Instructor Required" if cc == "MI" \
-		else "Department Head Approval Required" if cc == "MH" \
-		else "No Credit Course for Departmental Majors" if cc == "MN" \
-		else "Studio course; No general Humanities credit" if cc == "MS" \
-		else "Women Only" if cc == "MW" \
-		else "Auditors need instructor permission" if cc == "PAU" \
-		else "Permission needed from Continuing ED" if cc == "PCG" \
-		else "Permission needed from department" if cc == "PDP" \
-		else "Permission needed from instructor" if cc == "PIN" \
-		else "Undergrads need instructor permission" if cc == "PUN" \
-		else "UGs need permission of Dean of UG Academics" if cc == "PUA" \
-		else "unknown"
-	return {
-		"description": control_codes(requirement["@Control"]) + ": " + requirement["@Value1"]
-					   + (", " + requirement["@Value2"] if requirement["@Value2"] != "" else ""),
-		"code_list": list(filter(lambda s: s != "",
-								 [requirement["@Control"], requirement["@Value1"], requirement["@Value2"]])),
-	}
-
-
 def __clean_meeting__(meeting):
 	"""
 	Private helper function used by `__clean__`, handles `@Meeting` key.
@@ -132,6 +133,51 @@ def __clean_meeting__(meeting):
 	return clean_meeting
 
 
+def __coll_to_tups__(coll):
+	"""
+	Quick and dirty helper function to turn a python collection into organized tuples. Used in kanren, because lists
+	and dictionaries aren't hashable.
+	:param coll: A standard python collection (lists, dicts, etc.). Assumes everything other than lists and dicts are
+		simply values, and leaves them be.
+	:return: The same coll, but made up of completely tuples. If given a dictionary, will return a tuple of the form:
+		((key1, val1), (key2, val2), ..., (keyn, valn))
+	"""
+	return tuple([(k, __coll_to_tups__(v)) for (k, v) in list(coll.items())]) if type(coll) is dict \
+		else tuple(map(__coll_to_tups__, coll)) if type(coll) is list \
+		else coll
+
+
+def __tups_to_coll__(tups):
+	"""
+	Quick and Dirty helper function to turn an organized tuple of other tuples (as given by `__coll_to_tups__`) back into
+	whatever data type it previously was. Used to revert data structures used in kanren back to their original form.
+	:param tups: a collection comprised of only tuples, meant to emulate possibly nested dictionaries and lists
+	:return: the original python collection, whether it was a list, a dictionary, etc. Recursively performs this operation
+		on all of the tups's children until it is made up of completely lists and dictionaries.
+	"""
+	if type(tups) is tuple:
+		# to keep track of control codes, a possible edge case for checking maps
+		# TODO: make sure control codes arent being fucked
+		control_codes = ['(BLANK)', 'CC', 'CS', 'CA', 'RQ', 'R&', 'RQM', 'RM&', 'RQT', 'RT&', 'NQ', 'N&', 'NQM', 'NM&',
+						 'MB', 'MP', 'MC', 'ML', 'MA', 'MI', 'MH', 'MN', 'MS', 'MW', 'PAU', 'PCG', 'PDP', 'PIN', 'PUN',
+						 'PUA']
+		# tups only has other tuples in it
+		only_tups = reduce(lambda a, b: a and b, list(map(lambda thing: type(thing) is tuple, tups)))
+		# tups only has tuples of length two in it
+		all_have_two = reduce(lambda a, b: a and b, list(map(lambda tup: len(tup) == 2, tups))) if only_tups else False
+		# all tuples inside of tups have strings as the first element (i.e. they are keys)
+		all_have_keys = reduce(lambda a, b: a and b, list(map(lambda tup: type(tup[0]) is str, tups))) if only_tups else False
+
+		# tups was a map
+		if only_tups and all_have_two and all_have_keys:
+			return {k: __tups_to_coll__(v) for (k, v) in tups}
+		# tups was a list
+		else:
+			return list(map(__tups_to_coll__, tups))
+	else:
+		return tups
+
+
 def available_terms():
 	"""
 	Returns a list of python dictionaries representing the semesters and terms that the server knows about.
@@ -146,6 +192,7 @@ def available_terms():
 			map(lambda d: {"code": d["@Code"], "description": d["@Name"]}, xml.parse(rterms.text)["Terms"]["Term"]))
 	else:
 		raise Exception("Request returned invalid status code " + str(rterms.status_code) + ".")
+
 
 def semester(term_code):
 	"""
@@ -171,9 +218,9 @@ def semester(term_code):
 
 def course_sections(term, course_name):
 	"""
-	Retreives all sections related to a specific course from a term.
+	Retrieves all sections related to a specific course from a term.
 	:param course_name: String representing the name of the course (i.e. "CS 115")
-	:param term: Either a semester object (list of maps representing sections in a semeseter) or a string representing a term-code.
+	:param term: Either a semester object (list of maps representing sections in a semester) or a string representing a term-code.
 	:return: All sections in the semester relating to the course.
 	"""
 	if type(term) is list:
@@ -183,56 +230,14 @@ def course_sections(term, course_name):
 	if type(term) is str:
 		return list(filter(lambda section: course_name in section["section"], semester(term)["sections"]))
 
-def coll_to_tups(coll):
-	"""
-	Quick and dirty helper function to turn a python collection into organized tuples. Used in kanren, because lists
-	and dictionaries aren't hashable.
-	:param coll: A standard python collection (lists, dicts, etc.). Assumes everything other than lists and dicts are
-		simply values, and leaves them be.
-	:return: The same coll, but made up of completely tuples. If given a dictionary, will return a tuple of the form:
-		((key1, val1), (key2, val2), ..., (keyn, valn))
-	"""
-	return tuple([(k, coll_to_tups(v)) for (k, v) in list(coll.items())]) if type(coll) is dict \
-		else tuple(map(coll_to_tups, coll)) if type(coll) is list \
-		else coll
-
-def tups_to_coll(tups):
-	"""
-	Quick and Dirty helper function to turn an organized tuple of other tuples (as given by `coll_to_tups`) back into
-	whatever data type it previously was. Used to revert data structures used in kanren back to their original form.
-	:param tups: a collection comprised of only tuples, meant to emulate possibly nested dictionaries and lists
-	:return: the original python collection, whether it was a list, a dictionary, etc. Recursively performs this operation
-		on all of the tups's children until it is made up of completely lists and dictionaries.
-	"""
-	if type(tups) is tuple:
-		# to keep track of control codes, a possible edge case for checking maps
-		control_codes = ['(BLANK)', 'CC', 'CS', 'CA', 'RQ', 'R&', 'RQM', 'RM&', 'RQT', 'RT&', 'NQ', 'N&', 'NQM', 'NM&',
-						 'MB', 'MP', 'MC', 'ML', 'MA', 'MI', 'MH', 'MN', 'MS', 'MW', 'PAU', 'PCG', 'PDP', 'PIN', 'PUN',
-						 'PUA']
-		# tups only has other tuples in it
-		only_tups = reduce(lambda a, b: a and b, list(map(lambda thing: type(thing) is tuple, tups)))
-		# tups only has tuples of length two in it
-		all_have_two = reduce(lambda a, b: a and b, list(map(lambda tup: len(tup) == 2, tups))) if only_tups else False
-		# all tuples inside of tups have strings as the first element (i.e. they are keys)
-		all_have_keys = reduce(lambda a, b: a and b, list(map(lambda tup: type(tup[0]) is str, tups))) if only_tups else False
-
-		# tups was a map
-		if only_tups and all_have_two and all_have_keys:
-			return {k: tups_to_coll(v) for (k, v) in tups}
-		# tups was a list
-		else:
-			return list(map(tups_to_coll, tups))
-	else:
-		return tups
-
 def ex_relation_queries():
 	"""
 	A function to provide example kanren queries in the context of the stevens xml data.
 	Not meant to be used in legitimate production, more just a test-bed for relational functions.
 	"""
-	test_course = coll_to_tups(course_sections("2019F", "MA 121"))
+	test_course = __coll_to_tups__(course_sections("2019F", "MA 121"))
 
-	# Query: Which sections in test_course have section corequisite requirements?
+	# Query: Which sections in test_course have section co-requisite requirements?
 	section, sections, requirement, requirements, section_requirement = var(), var(), var(), var(), var()
 	run(0, section, (eq, sections, tuple([var() for thing in test_course])), (eq, sections, test_course),
 		(membero, section, sections),  										# There is a section in sections
@@ -257,39 +262,19 @@ def ex_relation_queries():
 		(membero, meeting, meetings),  					# that has a meeting
 		(membero, ("activity", "LEC"), meeting))  		# that is a lecture.
 
-	# Query: "Which sections satisfy an activity co-requisite?"
-	# MA 121A from 2019F is the section we're using to test here.
-	test_section = {'section': 'MA 121A', 'title': 'Differential Calculus', 'call_number': '11160', 'min_credit': 2, 'max_credit': 4, 'max_enrollment': 45, 'current_enrollment': 0, 'status': 'open', 'date_span': (datetime.date(2019, 8, 26), datetime.date(2019, 12, 20)), 'instructor_1': 'Staff A', 'term': '2019F', 'meetings': [{'day': ['monday', 'wednesday', 'friday'], 'time_span': (datetime.time(5, 0), datetime.time(5, 50)), 'site': 'Castle Point', 'building': '', 'room': '', 'activity': 'LEC'}], 'requirements': [{'description': 'Activity corequisite required: RCT', 'code_list': ['CA', 'RCT']}, {'description': 'Section corequisite required: D   110A', 'code_list': ['CS', 'D   110A']}, {'description': 'Section corequisite required: MA  122AA', 'code_list': ['CS', 'MA  122AA']}]}
-
-	for req in test_section["requirements"]:
-		if "CA" in req["code_list"]:
-			# gets the course name from the section name ("MA 123A => MA 123")
-			course_name = " ".join(re.findall("([A-Z]{2,3})\s+([0-9]{3})([A-Z]{1,2})?", test_section["section"])[0][0:2])
-			course = coll_to_tups(course_sections(test_section["term"], course_name))
-
-			# Query: "Which sections in this term satisfy MA 121A's activity-corequisite requirement?
-			section, sections, requirement, requirements, section_requirement, meeting, meetings = var(), var(), var(), var(), var(), var(), var()
-			result = run(0, section, (eq, sections, tuple([var() for thing in course])), (eq, sections, course),
-							(membero, section, sections),  							# There is a section in sections
-							(membero, ("meetings", meetings), section),  			# That has meetings
-							(membero, meeting, meetings),  							# that has a meeting
-							(membero, ("activity", req["code_list"][1]), meeting))  # That is the co-required activity.
-
-			# The commented out line below will crash until `tups_to_coll` is implemented
-			# return tups_to_coll(result)
-			return result
 
 def coreq_options(section, term=None):
 	"""
 	Returns a dictionary representing the options you have to satisfy a single section's co-requisites. See the
 	docs in /docs/home.md for specific information about the spec of these dictionaries.
 	:param section: The section to query for co-requisites
-	:param term: (optional) the term/semester object to use. Defaults to creating a term object from the termcode provided
+	:param term: (optional) the term/semester object to use. Defaults to creating a term object from the term code provided
 		by `section["term"]`.
 	:return: Python dictionary used to describe the options that can satisfy the section's co-requisites.
 	"""
 	# Set term if not provided
 	if not term: term = semester(section["term"])
+	elif type(term) is str: term = semester(term)
 	result = {}
 
 	for req in section["requirements"]:
@@ -297,7 +282,7 @@ def coreq_options(section, term=None):
 		if "CA" in req["code_list"]:
 			# gets the course name from the section name ("MA 123A => MA 123")
 			course_name = " ".join(re.findall("([A-Z]{2,3})\s+([0-9]{3})([A-Z]{1,2})?", section["section"])[0][0:2])
-			course = coll_to_tups(course_sections(term, course_name))
+			course = __coll_to_tups__(course_sections(term, course_name))
 			activity_type = req["code_list"][1]
 			# Query: "Which sections satisfy a `section`'s co-requisite?"
 			v_section, v_course, v_requirement, v_requirements, v_section_requirement, v_meeting, v_meetings, v_call_number \
@@ -311,12 +296,12 @@ def coreq_options(section, term=None):
 			if "activity" not in result.keys():
 				result["activity"] = [{
 					"type": activity_type,
-					"sections": tups_to_coll(kanren_result)
+					"sections": __tups_to_coll__(kanren_result)
 				}]
 			else:
 				result["activity"] += [{
 					"type": activity_type,
-					"sections": tups_to_coll(kanren_result)
+					"sections": __tups_to_coll__(kanren_result)
 				}]
 		# Section Co-Requisite
 		if "CS" in req["code_list"]:
@@ -332,23 +317,50 @@ def coreq_options(section, term=None):
 		# Course Co-Requisite
 		if "CC" in req["code_list"]:
 			# [s for s in term["sections"] if "requirements" in s.keys() and ["MC" in r["code_list"] for r in s["requirements"]]]
-			pass # TODO
+			pass  # TODO (Probably)
 	return result
 
 
-def course_combinations(term, course_names):
+def are_requirements_satisfied(sections):
 	"""
-	Returns a list of all possible ways multiple specified courses can be taken together given that all of their requirements are collectively satisfied.
-	:param term:
-	:param names:
-	:return:
+	Returns true of the sections dictionaries described in `sections` satisfy each other's co-requisite requirements
+	:param sections: A list of section dictionaries.
+	:return: Boolean that represents whether or not the sections in `sections` satisfy each other's requirements.
 	"""
-	# this is likely gonna be closest to the main function
-	# possibly just make a ton of section_requisite satisfaction functions and map them onto the thing?
+	pass # TODO
+
+def generate_schedules(term, courses, num_schedules=0, minimum_free_time=None, maximum_free_time=None, time_spans_when_free=None, time_spans_when_busy=None, maximum_class_duration=None):
+	"""
+	Generates a list of lists with section dictionaries in them. Each sublist describes a unique schedule given the courses
+	that the user wants to take.
+	:param term: Either a semester/term dictionary, or a valid term code.
+	:param courses: A list of course names that the user wants to sign up for / schedule.
+	:param num_schedules: (Optional) The number of schedules to generate. A value of 0 will return all possible schedules.
+		Defaults to 0.
+	:param minimum_free_time: The smallest amount of time per day that the user wants to leave unscheduled, measured
+		in hours. Does not count time inside of time spans set by `time_spans_when_free` and `time_spans_when_busy`.
+		Defaults to 0.
+	:param maximum_free_time: The largest amount of time per day that the user wants to leave unscheduled, measured
+		in hours. Does not count time inside of time spans set by `time_spans_when_free` and `time_spans_when_busy`.
+		Defaults to infinity.
+	:param time_spans_when_free: A python dictionary describing blocks of time that the user wants to leave unscheduled.
+		Acceptable keys include `"monday"`, `"tuesday"`, `"wednesday"`, `"thursday"`, `"friday"`, `"saturday"`, `"weekdays"`,
+		and `"all"`. Acceptable values for such dictionaries are lists of tuples with two datetime.time objects in them,
+		denoting ranges of time to be left free on specific days. Defaults to {"all": [(dt.time(21, 0), dt.time(8, 0))]}.
+	:param time_spans_when_busy: A python dictionary describing blocks of time that the user wants to be scheduled.
+		Acceptable keys include `"monday"`, `"tuesday"`, `"wednesday"`, `"thursday"`, `"friday"`, `"saturday"`, `"weekdays"`,
+		and `"all"`. Acceptable values for such dictionaries are lists of tuples with two datetime.time objects in them,
+		denoting ranges of time to be booked on specific days. Defaults to {"all": [(dt.time(21, 0), dt.time(8, 0))]}.
+	:param maximum_class_duration: The maximum acceptable duration for any single class, measured in hours. Defaults to infinity.
+	:return: A list of lists with sections in them. Each sublist describes a unique schedule.
+	"""
 	pass  # TODO
 
 
 def test():
+	"""
+	Quick function used to test things
+	"""
 	# parent = Relation()
 	# facts(parent, ("Homer", "Bart"), ("Homer", "Lisa"), ("Abe", "Homer"))
 	# facts(parent, ["Marcus", {"name": "God"}])
