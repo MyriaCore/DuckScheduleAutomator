@@ -10,10 +10,11 @@
     - [Intro / Lay of the Land](#intro--lay-of-the-land)
     - [Our Code](#our-code)
         - [Term and Section Data](#term-and-section-data)
-            - [Term Spec](#term-spec)
+            - [Available Term Spec](#available-terms-spec)
             - [Section Spec](#section-spec)
             - [Meeting Spec](#meeting-spec)
             - [Requirement Spec](#requirement-spec) 
+            - [Co-Requisite Options Spec](#co-requisite-options-spec)
 
 ## Intro / Lay of the Land
 This is probably gonna be the worst documentation you've read in your entire life, so bear with me here.
@@ -38,6 +39,7 @@ Below is a table describing what these functions do.
 | `available_terms()` | Gets a list of python dictionaries describing semesters / terms  that [stevens web server](https://web.stevens.edu/scheduler/core) knows about. |
 | `semester(term_code)` | Returns a "semester dictionary", a python dictionary that describes a term or semester. It has only two keys: `"term"`, which is the term code for that semester, and `"sections"`, which is a list of "section dictionaries", which is described in the [Section Spec](#section-spec) section. |
 | `course_sections(term, course_name)` | Returns all of the sections in a term `term` that are related to a specific course `course`. It should be noted that `term` can either be a term code or a semester dictionary, and that `course_name` is the shorthand name of the course (i.e. `"CS 115"`).
+| `coreq_options(section, term?)` | Returns a python dictionary that describes the possible section options that could satisfy a section's co-requisite requirements. To view more about the dictionaries returned by this function, view the [Co-Requisite Options Spec](#co-requisite-options-spec) section. |
 
 #### Available Terms Spec
 A dictionary inside of the list returned by `available_terms()`  will have only two keys: `code`, and `description`. 
@@ -97,3 +99,14 @@ The two keys are described in the table below.
 |---|---|
 | `description` | A brief human readable description of the requirement. (e.g. `"Prerequisite course required: CS  115"`) |
 | `code_list` | A list of strings representing API codes and values that pertain to then. Will generally be in the form of `[control, value1, value2. ..., valuen]`. For more information about what control and value means here, see the [Course Requirement Designators](stevens-scheduler.md#course-requirements-designators) and [Control Designators](stevens-scheduler.md#control-designators) sections in the [page about the stevens web server](stevens-scheduler.md). |
+
+##### Co-Requisite Options Spec
+Running the function `coreq_options(section, term?)` will give you a dictionary with a variable amount of keys, depending on what co-requisite requirements the course in quesiton had.
+
+Below is a table describing the keys you will likely encounter.
+
+| Key | Description |
+|---|---|
+| `activity` | A list of python dictionaries that represent activity co-requisite options. There are only two keys: `type` and `sections`, which refer to the type of activity (i.e. `"LEC"`, `"RCT"`, etc.), and the list of section dictionaries to choose from respectively. |
+| `section` | A list of section dictionaries. Be advised that all elements in this list must be present to satisfy this requirement, unlike the elements found in the `activity`.  |
+| `course` | (*NOT YET IMPLEMENTED!*) |

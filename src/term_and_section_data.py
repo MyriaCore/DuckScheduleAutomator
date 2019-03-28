@@ -279,17 +279,61 @@ def ex_relation_queries():
 			# return tups_to_coll(result)
 			return result
 
-
-def section_corequisite_combinations(term, section):
+def coreq_options(section, term=None):
 	"""
-	Returns a list containing every possible way a section's corequisites can be satisfied, excluding the activity corequisites.
-	An individual combination should only contain section call codes, rather than full objects.
-	:param term:
-	:param section:
-	:return:
+	Returns a dictionary representing the options you have to satisfy a single section's co-requisites. See the
+	docs in /docs/home.md for specific information about the spec of these dictionaries.
+	:param section: The section to query for co-requisites
+	:param term: (optional) the term/semester object to use. Defaults to creating a term object from the termcode provided
+		by `section["term"]`.
+	:return: Python dictionary used to describe the options that can satisfy the section's co-requisites.
 	"""
+	# TODO: test
+	# Set term if not provided
+	if not term: term = semester(section["term"])
+	result = {}
 
-	pass  # TODO
+	for req in section["requirements"]:
+		# Activity Co-Requisite
+		if "CA" in req["code_list"]:
+			# gets the course name from the section name ("MA 123A => MA 123")
+			course_name = " ".join(re.findall("([A-Z]{2,3})\s+([0-9]{3})([A-Z]{1,2})?", section["section"])[0][0:2])
+			course = coll_to_tups(course_sections(term, course_name))
+			activity_type = req["code_list"][1]
+			# Query: "Which sections satisfy a `section`'s co-requisite?"
+			v_section, v_sections, v_requirement, v_requirements, v_section_requirement, v_meeting, v_meetings, v_call_number \
+				= var(), var(), var(), var(), var(), var(), var(), var()
+			kanren_result = run(0, v_section, (eq, v_sections, tuple([var() for _ in course])), (eq, v_sections, course),
+						(membero, v_section, v_sections),  							# There is a section `vsection` in `v_sections`
+						(membero, ("call_number", v_call_number), v_section),		# That has a callnumber `v_call_number`
+						(membero, ("meetings", v_meetings), v_section),  			# and has a list of meetings `v_meetings`
+						(membero, v_meeting, v_meetings),  							# which has some meeting `v_meeting`
+						(membero, ("activity", ), v_meeting))  	# That is the co-required activity.
+			if "activity" not in result.keys():
+				result["activity"] = [{
+					"type": activity_type,
+					"sections": tups_to_coll(kanren_result)
+				}]
+			else:
+				result["activity"] += [{
+					"type": activity_type,
+					"sections": tups_to_coll(kanren_result)
+				}]
+		# Section Co-Requisite
+		if "CS" in req["code_list"]:
+			# Clean up section coreq name to make it searchable
+			parsed_section_coreq_name = re.findall("([A-Z]{2,3})\s+([0-9]{3})([A-Z]{1,2})?", req["code_list"][1])[0]
+			section_coreq_name = " ".join(parsed_section_coreq_name[0:2]) + parsed_section_coreq_name[3]
+
+			section_coreq = [s for s in term["sections"] if s["section"] == section_coreq_name][0]
+			if "section" not in result.keys():
+				result["section"] = [section_coreq]
+			else:
+				result["section"] += [section_coreq]
+		# Course Co-Requisite
+		if "CC" in req["code_list"]:
+			# [s for s in term["sections"] if "requirements" in s.keys() and ["MC" in r["code_list"] for r in s["requirements"]]]
+			pass # TODO
 
 
 def course_combinations(term, course_names):
@@ -314,10 +358,10 @@ def test():
 	with open("data/2019F.xml", "r") as f:
 		sem = {"sections": list(map(lambda d: __clean__(d), xml.parse(f.read())["Semester"]["Course"])), "code": "2019F"}
 		f.close()
+	section = {'section': 'MA 121A', 'title': 'Differential Calculus', 'call_number': '11160', 'min_credit': 2, 'max_credit': 4, 'max_enrollment': 45, 'current_enrollment': 0, 'status': 'open', 'date_span': (datetime.date(2019, 8, 26), datetime.date(2019, 12, 20)), 'instructor_1': 'Staff A', 'term': '2019F', 'meetings': [{'day': ['monday', 'wednesday', 'friday'], 'time_span': (datetime.time(5, 0), datetime.time(5, 50)), 'site': 'Castle Point', 'building': '', 'room': '', 'activity': 'LEC'}], 'requirements': [{'description': 'Activity corequisite required: RCT', 'code_list': ['CA', 'RCT']}, {'description': 'Section corequisite required: D   110A', 'code_list': ['CS', 'D   110A']}, {'description': 'Section corequisite required: MA  122AA', 'code_list': ['CS', 'MA  122AA']}]}
 
-	# The below block of code is an attempt to sketch out what a function might look like if it were trying to
-	# retrieve all sections that satisfy an activity corequisite
-
+	# Gets a list of tuples containing the term and the call number of courses that satisfy section's coreq requirements
+	list(map(lambda s: (s["term"], s["call_number"]), section_coreq_combinations(section)))
 
 	# Splits up a Section name into Subject, Course, and Section.
 	re.findall("([A-Z]{2,3})\s+([0-9]{3})([A-Z]{1,2})?", "MA 123RC")
