@@ -281,7 +281,7 @@ def coreq_options(section, term=None):
 		# Activity Co-Requisite
 		if "CA" in req["code_list"]:
 			# gets the course name from the section name ("MA 123A => MA 123")
-			course_name = " ".join(re.findall("([A-Z]{2,3})\s+([0-9]{3})([A-Z]{1,2})?", section["section"])[0][0:2])
+			course_name = " ".join(re.findall("([A-Z]{1,3})\s+([0-9]{3})([A-Z]{1,2})?", section["section"])[0][0:2])
 			course = __coll_to_tups__(course_sections(term, course_name))
 			activity_type = req["code_list"][1]
 			# Query: "Which sections satisfy a `section`'s co-requisite?"
