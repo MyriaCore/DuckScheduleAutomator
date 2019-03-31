@@ -264,7 +264,7 @@ def ex_relation_queries():
 		(membero, ("activity", "LEC"), meeting))  		# that is a lecture.
 
 
-def coreq_options(section, term=None):
+def section_coreq_options(section, term=None):
 	"""
 	Returns a dictionary representing the options you have to satisfy a single section's co-requisites. See the
 	docs in /docs/home.md for specific information about the spec of these dictionaries.
@@ -321,17 +321,23 @@ def coreq_options(section, term=None):
 			pass  # TODO (Probably)
 	return result
 
-
-def are_requirements_satisfied(sections):
+def course_coreq_options(course, term):
 	"""
-	Returns true of the sections dictionaries described in `sections` satisfy each other's co-requisite requirements
-	:param sections: A list of section dictionaries.
-	:return: Boolean that represents whether or not the sections in `sections` satisfy each other's requirements.
+	Returns a dictionary representing the ways you could take a full course, if you start assuming you'll take a specific
+	section. For example, when searching MA 121 in 2019F, `course_coreq_options` will present the names of single sections
+	related to MA 121 as keys, and the values for those keys will be the result of a call to `section_coreq_options` on
+	that section.
+	:param course: A string or course dictionary, representing the course to take.
+	:param term: A semester dictionary or term code representing the term that the course is meant to be taken in.
+	:return: A python dictionary representing the different ways a course can be taken.
 	"""
-	pass # TODO
+	term = semester(term) if type(term) is str else term
+	course = course_sections(term, course) if type(course) is str else course
+	return {section["section"]: section_coreq_options(section, term) for section in course}
 
 def generate_schedules(term, courses, num_schedules=0, minimum_free_time=0, maximum_free_time=math.inf,
-					   time_spans_when_free={}, time_spans_when_busy={}, max_consecutive_time_working=math.inf):
+					   time_spans_when_free={}, time_spans_when_busy={}, max_consecutive_time_working=math.inf,
+					   require_open=false):
 	"""
 	Generates a list of lists with section dictionaries in them. Each sublist describes a unique schedule given the courses
 	that the user wants to take.
@@ -339,27 +345,41 @@ def generate_schedules(term, courses, num_schedules=0, minimum_free_time=0, maxi
 	:param courses: A list of course names that the user wants to sign up for / schedule.
 	:param num_schedules: (Optional) The number of schedules to generate. A value of 0 will return all possible schedules.
 		Defaults to 0.
-	:param minimum_free_time: The smallest amount of time per day that the user wants to leave unscheduled, measured
+	:param minimum_free_time: (optional) The smallest amount of time per day that the user wants to leave unscheduled, measured
 		in hours. Does not count time inside of time spans set by `time_spans_when_free` and `time_spans_when_busy`.
 		Defaults to 0.
-	:param maximum_free_time: The largest amount of time per day that the user wants to leave unscheduled, measured
+	:param maximum_free_time: (optional) The largest amount of time per day that the user wants to leave unscheduled, measured
 		in hours. Does not count time inside of time spans set by `time_spans_when_free` and `time_spans_when_busy`.
 		Defaults to infinity.
-	:param time_spans_when_free: A python dictionary describing blocks of time that the user wants to leave unscheduled.
+	:param time_spans_when_free: (optional) A python dictionary describing blocks of time that the user wants to leave unscheduled.
 		Acceptable keys include `"monday"`, `"tuesday"`, `"wednesday"`, `"thursday"`, `"friday"`, `"saturday"`, `"weekdays"`,
 		and `"all"`. Acceptable values for such dictionaries are lists of tuples with two datetime.time objects in them,
 		denoting ranges of time to be left free on specific days. Defaults to none (an empty dictionary).
-	:param time_spans_when_busy: A python dictionary describing blocks of time that the user wants to be scheduled.
+	:param time_spans_when_busy: (optional) A python dictionary describing blocks of time that the user wants to be scheduled.
 		Acceptable keys include `"monday"`, `"tuesday"`, `"wednesday"`, `"thursday"`, `"friday"`, `"saturday"`, `"weekdays"`,
 		and `"all"`. Acceptable values for such dictionaries are lists of tuples with two datetime.time objects in them,
 		denoting ranges of time to be booked on specific days. Defaults to none (an empty dictionary).
-	:param max_consecutive_time_working: The maximum acceptable amount of time to be working straight, measured in hours.
+	:param max_consecutive_time_working: (optional) The maximum acceptable amount of time to be working straight, measured in hours.
 		For example, if the user sets this to 4, they will not be proposed any schedules that have a 4 hour block of time
 		where they're just continuously working. Defaults to infinity.
+	:param require_open:
 	:return: A list of lists with sections in them. Each sublist describes a unique schedule.
 	"""
 	term = semester(term) if type(term) is str else term
-	courses = [coreq_options(course) for course in courses] if reduce(lambda c0, c1: c0 and type(c1) is str, courses) else courses
+	courses = [course_sections(term, course) for course in courses] \
+		if reduce(lambda acc, c: acc and type(c) is str) else courses
+	pass # TODO
+
+	# Query: Which sections in test_course have section co-requisite requirements?
+	section, sections, requirement, requirements, section_requirement = var(), var(), var(), var(), var()
+	run(0, section, (eq, sections, tuple([var() for thing in test_course])), (eq, sections, test_course),
+		(membero, section, sections),  # There is a section in sections
+		(membero, ("requirements", requirements), section),  # that has requirements
+		(membero, requirement, requirements),  # which has a requirement
+		(membero, ("code_list", ("CS", section_requirement)), requirement))  # that is a class requirement requirement
+
+
+
 
 
 
