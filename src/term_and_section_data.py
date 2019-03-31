@@ -6,7 +6,7 @@ import re
 from functools import reduce
 import math
 import datetime as dt
-from kanren import run, eq, membero, var, conde, Relation, facts, fact, Var
+from kanren import run, eq, membero, var, conde, Relation, facts, fact, Var, lall, lany
 from collections import OrderedDict
 
 
@@ -310,11 +310,13 @@ def section_coreq_options(section, term=None):
 			parsed_section_coreq_name = re.findall("([A-Z]{1,3})\s+([0-9]{3})([A-Z]{1,2})?", req["code_list"][1])[0]
 			section_coreq_name = " ".join(parsed_section_coreq_name[0:2]) + parsed_section_coreq_name[2]
 
-			section_coreq = [s for s in term["sections"] if s["section"] == section_coreq_name][0]
-			if "section" not in result.keys():
-				result["section"] = [section_coreq]
-			else:
-				result["section"] += [section_coreq]
+			section_coreq = [s for s in term["sections"] if s["section"] == section_coreq_name]
+			# if statement for null safety
+			if section_coreq:
+				if "section" not in result.keys():
+					result["section"] = [section_coreq[0]]
+				else:
+					result["section"] += [section_coreq[0]]
 		# Course Co-Requisite
 		if "CC" in req["code_list"]:
 			# [s for s in term["sections"] if "requirements" in s.keys() and ["MC" in r["code_list"] for r in s["requirements"]]]
@@ -333,11 +335,11 @@ def course_coreq_options(course, term):
 	"""
 	term = semester(term) if type(term) is str else term
 	course = course_sections(term, course) if type(course) is str else course
-	return {section["section"]: section_coreq_options(section, term) for section in course}
+	return {section["call_number"]: section_coreq_options(section, term) for section in course}
 
 def generate_schedules(term, courses, num_schedules=0, minimum_free_time=0, maximum_free_time=math.inf,
 					   time_spans_when_free={}, time_spans_when_busy={}, max_consecutive_time_working=math.inf,
-					   require_open=false):
+					   require_open=None):
 	"""
 	Generates a list of lists with section dictionaries in them. Each sublist describes a unique schedule given the courses
 	that the user wants to take.
@@ -368,20 +370,29 @@ def generate_schedules(term, courses, num_schedules=0, minimum_free_time=0, maxi
 	term = semester(term) if type(term) is str else term
 	courses = [course_sections(term, course) for course in courses] \
 		if reduce(lambda acc, c: acc and type(c) is str) else courses
-	pass # TODO
 
-	# Query: Which sections in test_course have section co-requisite requirements?
-	section, sections, requirement, requirements, section_requirement = var(), var(), var(), var(), var()
-	run(0, section, (eq, sections, tuple([var() for thing in test_course])), (eq, sections, test_course),
-		(membero, section, sections),  # There is a section in sections
-		(membero, ("requirements", requirements), section),  # that has requirements
-		(membero, requirement, requirements),  # which has a requirement
-		(membero, ("code_list", ("CS", section_requirement)), requirement))  # that is a class requirement requirement
+	coreq_opts = [course_coreq_options(course, term) for course in courses]
 
-
-
-
-
+	# TODO: format schedule so that only the call codes are retreived
+	# TODO: this definitely doesn't work yet so debug soon
+	# Query: What schedules can we have given that any section in each activity-coreq satisfies,
+	# 	and all sections in section-coreq satisfy?
+	v_schedule, v_section, v_course_opts, v_course_opt, v_section_call_no, v_section_opts, v_activity_reqs, \
+		v_activity_req, v_section_req_type, v_section_req, v_ = \
+		var(), var(), var(), var(), var(), var(), var(), var(), var(), var(), var()
+	run(0, v_section, (eq, v_course_opts, tuple([var() for thing in coreq_opts])), (eq, v_course_opts, __coll_to_tups__(coreq_opts)),
+		(membero, v_course_opt, v_course_opts), 						# there exists a course option in course options
+		(membero, (v_section_call_no, v_section_opts), v_course_opt), 	# there exists section options tied to a call no in course option
+		(membero, v_section_call_no, v_schedule), 						# whose call no should be included in the schedule.
+		(membero, (v_section_req_type, v_section_req), v_section_opts), # there exists a section req tpe tied to a section req in section options
+		(lany,
+			(lall, (eq, v_section_req_type, "activity"),  		# If the section req is an activity...
+				(membero, v_activity_reqs, v_section_req),  	# Section req has an activity
+				(membero, ("sections", v_), v_activity_reqs), 	# and any section in activity...
+				(lany, (membero, v_, v_schedule))),				# Can be made part of the schedule.
+			(lall, (eq, v_section_req_type, "section"),			# If the section req is a section...
+				(membero, v_, v_section_req),					# All things inside section requirements...
+				(membero, v_, v_schedule))))					# Should be made part of the schedule
 
 def test():
 	"""
