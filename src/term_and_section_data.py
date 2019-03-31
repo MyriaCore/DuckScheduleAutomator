@@ -4,7 +4,8 @@ import xmltodict as xml
 from src.date_util import convert_time, convert_date
 import re
 from functools import reduce
-import datetime
+import math
+import datetime as dt
 from kanren import run, eq, membero, var, conde, Relation, facts, fact, Var
 from collections import OrderedDict
 
@@ -329,7 +330,8 @@ def are_requirements_satisfied(sections):
 	"""
 	pass # TODO
 
-def generate_schedules(term, courses, num_schedules=0, minimum_free_time=None, maximum_free_time=None, time_spans_when_free=None, time_spans_when_busy=None, maximum_class_duration=None):
+def generate_schedules(term, courses, num_schedules=0, minimum_free_time=0, maximum_free_time=math.inf,
+					   time_spans_when_free={}, time_spans_when_busy={}, max_consecutive_time_working=math.inf):
 	"""
 	Generates a list of lists with section dictionaries in them. Each sublist describes a unique schedule given the courses
 	that the user wants to take.
@@ -346,15 +348,19 @@ def generate_schedules(term, courses, num_schedules=0, minimum_free_time=None, m
 	:param time_spans_when_free: A python dictionary describing blocks of time that the user wants to leave unscheduled.
 		Acceptable keys include `"monday"`, `"tuesday"`, `"wednesday"`, `"thursday"`, `"friday"`, `"saturday"`, `"weekdays"`,
 		and `"all"`. Acceptable values for such dictionaries are lists of tuples with two datetime.time objects in them,
-		denoting ranges of time to be left free on specific days. Defaults to {"all": [(dt.time(21, 0), dt.time(8, 0))]}.
+		denoting ranges of time to be left free on specific days. Defaults to none (an empty dictionary).
 	:param time_spans_when_busy: A python dictionary describing blocks of time that the user wants to be scheduled.
 		Acceptable keys include `"monday"`, `"tuesday"`, `"wednesday"`, `"thursday"`, `"friday"`, `"saturday"`, `"weekdays"`,
 		and `"all"`. Acceptable values for such dictionaries are lists of tuples with two datetime.time objects in them,
-		denoting ranges of time to be booked on specific days. Defaults to {"all": [(dt.time(21, 0), dt.time(8, 0))]}.
-	:param maximum_class_duration: The maximum acceptable duration for any single class, measured in hours. Defaults to infinity.
+		denoting ranges of time to be booked on specific days. Defaults to none (an empty dictionary).
+	:param max_consecutive_time_working: The maximum acceptable amount of time to be working straight, measured in hours.
+		For example, if the user sets this to 4, they will not be proposed any schedules that have a 4 hour block of time
+		where they're just continuously working. Defaults to infinity.
 	:return: A list of lists with sections in them. Each sublist describes a unique schedule.
 	"""
-	pass  # TODO
+	term = semester(term) if type(term) is str else term
+	courses = [coreq_options(course) for course in courses] if reduce(lambda c0, c1: c0 and type(c1) is str, courses) else courses
+
 
 
 def test():
@@ -370,7 +376,7 @@ def test():
 	with open("data/2019F.xml", "r") as f:
 		sem = {"sections": list(map(lambda d: __clean__(d), xml.parse(f.read())["Semester"]["Course"])), "code": "2019F"}
 		f.close()
-	section = {'section': 'MA 121A', 'title': 'Differential Calculus', 'call_number': '11160', 'min_credit': 2, 'max_credit': 4, 'max_enrollment': 45, 'current_enrollment': 0, 'status': 'open', 'date_span': (datetime.date(2019, 8, 26), datetime.date(2019, 12, 20)), 'instructor_1': 'Staff A', 'term': '2019F', 'meetings': [{'day': ['monday', 'wednesday', 'friday'], 'time_span': (datetime.time(5, 0), datetime.time(5, 50)), 'site': 'Castle Point', 'building': '', 'room': '', 'activity': 'LEC'}], 'requirements': [{'description': 'Activity corequisite required: RCT', 'code_list': ['CA', 'RCT']}, {'description': 'Section corequisite required: D   110A', 'code_list': ['CS', 'D   110A']}, {'description': 'Section corequisite required: MA  122AA', 'code_list': ['CS', 'MA  122AA']}]}
+	section = {'section': 'MA 121A', 'title': 'Differential Calculus', 'call_number': '11160', 'min_credit': 2, 'max_credit': 4, 'max_enrollment': 45, 'current_enrollment': 0, 'status': 'open', 'date_span': (dt.date(2019, 8, 26), dt.date(2019, 12, 20)), 'instructor_1': 'Staff A', 'term': '2019F', 'meetings': [{'day': ['monday', 'wednesday', 'friday'], 'time_span': (dt.time(5, 0), dt.time(5, 50)), 'site': 'Castle Point', 'building': '', 'room': '', 'activity': 'LEC'}], 'requirements': [{'description': 'Activity corequisite required: RCT', 'code_list': ['CA', 'RCT']}, {'description': 'Section corequisite required: D   110A', 'code_list': ['CS', 'D   110A']}, {'description': 'Section corequisite required: MA  122AA', 'code_list': ['CS', 'MA  122AA']}]}
 
 	# Gets a list of tuples containing the term and the call number of courses that satisfy section's coreq requirements
 	list(map(lambda s: (s["term"], s["call_number"]), coreq_options(section)))
